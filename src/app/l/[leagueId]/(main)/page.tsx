@@ -86,14 +86,15 @@ export default async function LeagueHome({ params }: PageProps<"/l/[leagueId]">)
         {league.description && <p className="text-muted mt-2 max-w-xl">{league.description}</p>}
         <div className="grid grid-cols-3 gap-2 mt-5">
           {[
-            { label: "Teams", value: teams.length },
-            { label: "Players", value: players.length },
-            { label: "Games played", value: gamesPlayed },
+            { label: "Teams", value: teams.length, href: `${base}/teams` },
+            { label: "Players", value: players.length, href: `${base}/players` },
+            { label: "Games played", value: gamesPlayed, href: `${base}/schedule` },
           ].map((s) => (
-            <div key={s.label} className="card px-3 py-2.5">
+            <Link key={s.label} href={s.href} className="card px-3 py-2.5 relative hover:bg-surface-2 active:bg-surface-2 transition-colors">
+              <ChevronRight size={15} className="absolute top-2.5 right-2 text-muted" />
               <div className="display text-3xl tabular">{s.value}</div>
               <div className="text-[10px] uppercase tracking-widest text-muted font-semibold mt-1">{s.label}</div>
-            </div>
+            </Link>
           ))}
         </div>
       </section>
@@ -120,7 +121,16 @@ export default async function LeagueHome({ params }: PageProps<"/l/[leagueId]">)
       )}
 
       <section>
-        <SectionHeader title="Upcoming games" />
+        <SectionHeader
+          title="Upcoming games"
+          action={
+            games.length > 0 ? (
+              <Link href={`${base}/schedule`} className="text-xs font-semibold text-muted hover:text-text">
+                Full schedule
+              </Link>
+            ) : undefined
+          }
+        />
         {upcoming.length === 0 ? (
           <EmptyState
             title="Nothing on the schedule"
