@@ -1,10 +1,19 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { SUPABASE_KEY, SUPABASE_URL } from "@/lib/supabase/env";
+import { SUPABASE_CONFIGURED, SUPABASE_KEY, SUPABASE_URL } from "@/lib/supabase/env";
 
 const PUBLIC_PATHS = ["/", "/login", "/signup", "/auth"];
 
 export async function proxy(request: NextRequest) {
+  if (!SUPABASE_CONFIGURED) {
+    return new NextResponse(
+      "Sideline isn't connected to Supabase yet.\n\n" +
+        "Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (or NEXT_PUBLIC_SUPABASE_ANON_KEY) " +
+        "to your environment variables, then redeploy.",
+      { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } },
+    );
+  }
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(SUPABASE_URL, SUPABASE_KEY, {
