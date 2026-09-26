@@ -73,12 +73,26 @@ const tierColor = {
   unrated: "var(--surface-2)",
 };
 
-export function OvrBadge({ ovr, size = "md" }: { ovr: number | null; size?: "sm" | "md" | "lg" }) {
+export function OvrBadge({
+  ovr,
+  size = "md",
+  className = "",
+}: {
+  ovr: number | null;
+  size?: "sm" | "md" | "card" | "lg";
+  className?: string;
+}) {
   const tier = ovrTier(ovr);
-  const dims = { sm: "w-9 h-9 text-base", md: "w-11 h-11 text-xl", lg: "w-20 h-20 text-4xl" }[size];
+  const dims = {
+    sm: "w-9 h-9 text-base",
+    md: "w-11 h-11 text-xl",
+    card: "w-[3.25rem] h-[3.25rem] text-2xl",
+    lg: "w-20 h-20 text-4xl",
+  }[size];
+  const showLabel = size === "lg" || size === "card";
   return (
     <span
-      className={`${dims} shrink-0 rounded-xl inline-flex flex-col items-center justify-center display tabular`}
+      className={`${dims} shrink-0 rounded-xl inline-flex flex-col items-center justify-center display tabular ${className}`}
       style={{
         background: tierColor[tier],
         color: tier === "unrated" ? "var(--muted)" : "#0a0c10",
@@ -87,7 +101,7 @@ export function OvrBadge({ ovr, size = "md" }: { ovr: number | null; size?: "sm"
       title={ovr == null ? "Not rated yet. Log a game to get an OVR." : `Overall rating ${ovr}`}
     >
       {ovr ?? "NR"}
-      {size === "lg" && <span className="text-[10px] tracking-widest opacity-70 mt-0.5">OVR</span>}
+      {showLabel && <span className="text-[9px] tracking-widest opacity-70 mt-0.5">OVR</span>}
     </span>
   );
 }

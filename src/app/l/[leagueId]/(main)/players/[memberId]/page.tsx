@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeftRight, BarChart3, Crown, Pencil, Settings } from "lucide-react";
+import { ArrowLeftRight, BarChart3, Pencil, Settings } from "lucide-react";
 import { getLeagueContext } from "@/lib/league";
-import { Avatar, EmptyState, OvrBadge, SectionHeader, TeamBadge } from "@/components/ui";
+import { EmptyState, SectionHeader } from "@/components/ui";
 import { TeamTheme } from "@/components/team-theme";
 import { DraftButton } from "@/components/draft-button";
+import { PlayerHero } from "@/components/player-hero";
 import { catchRate } from "@/lib/ovr";
 import { formatGameDate, formatHeight } from "@/lib/format";
-import { FREE_AGENT_COLOR, FREE_AGENTS_ID } from "@/lib/constants";
+import { FREE_AGENT_COLOR } from "@/lib/constants";
 import type { StatLine } from "@/lib/types";
 
 export default async function PlayerPage({ params }: PageProps<"/l/[leagueId]/players/[memberId]">) {
@@ -19,7 +20,6 @@ export default async function PlayerPage({ params }: PageProps<"/l/[leagueId]/pl
 
   const base = `/l/${leagueId}`;
   const team = player.team_id ? teamById.get(player.team_id) ?? null : null;
-  const color = team?.color ?? FREE_AGENT_COLOR;
   const ovr = ovrByMember.get(player.id) ?? null;
   const totals = statsByMember.get(player.id);
   const isMe = player.id === me.id;
@@ -69,54 +69,7 @@ export default async function PlayerPage({ params }: PageProps<"/l/[leagueId]/pl
     <div className="space-y-6 animate-fade-up">
       <TeamTheme color={team?.color ?? FREE_AGENT_COLOR} />
 
-      <section className="card overflow-hidden relative">
-        <div
-          className="absolute inset-0"
-          style={{ background: `linear-gradient(160deg, color-mix(in srgb, ${color} 50%, transparent), transparent 70%)` }}
-        />
-        {player.jersey_number != null && (
-          <div className="hidden sm:block absolute right-3 -top-4 display text-[10rem] opacity-10 select-none pointer-events-none tabular" aria-hidden="true">
-            {player.jersey_number}
-          </div>
-        )}
-        {/* Phone: photo + OVR on top, name full-width below. Wider: all in one row. */}
-        <div className="relative p-5 pb-4 grid grid-cols-[auto_minmax(0,1fr)_auto] items-end gap-x-4 gap-y-3">
-          <Avatar member={player} color={color} size="xl" />
-          {player.jersey_number != null && (
-            <div
-              className="sm:hidden col-start-2 row-start-1 self-center justify-self-center display text-[5.5rem] leading-none opacity-15 select-none pointer-events-none tabular"
-              aria-hidden="true"
-            >
-              {player.jersey_number}
-            </div>
-          )}
-          <div className="col-span-3 row-start-2 sm:col-span-1 sm:col-start-2 sm:row-start-1 min-w-0 pb-1">
-            {player.nickname && <div className="text-sm text-text/70 italic">&ldquo;{player.nickname}&rdquo;</div>}
-            <h1 className="display text-4xl leading-[0.95] text-balance break-words">{player.display_name}</h1>
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              {player.jersey_number != null && <span className="chip !text-text">#{player.jersey_number}</span>}
-              {player.offense_position && <span className="chip">OFF · {player.offense_position}</span>}
-              {player.defense_position && <span className="chip">DEF · {player.defense_position}</span>}
-            </div>
-          </div>
-          <div className="col-start-3 row-start-1 self-start sm:self-end">
-            <OvrBadge ovr={ovr} size="lg" />
-          </div>
-        </div>
-        <Link
-          href={team ? `${base}/teams/${team.id}` : `${base}/teams/${FREE_AGENTS_ID}`}
-          className="relative flex items-center gap-2.5 px-5 py-3 border-t border-white/10 bg-black/20 hover:bg-black/30 transition-colors"
-        >
-          <TeamBadge team={team} size={24} />
-          <span className="text-sm font-semibold">{team?.name ?? "Free Agent"}</span>
-          {isCaptain && (
-            <span className="text-xs text-text/70 inline-flex items-center gap-1">
-              <Crown size={12} /> Captain
-            </span>
-          )}
-          {player.is_commissioner && <span className="text-xs text-text/70">· Commissioner</span>}
-        </Link>
-      </section>
+      <PlayerHero player={player} team={team} ovr={ovr} isCaptain={isCaptain} base={base} />
 
       {(isMe || canRequestTrade || canDraft || me.is_commissioner) && (
         <div className="flex gap-2">
