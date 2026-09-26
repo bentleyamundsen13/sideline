@@ -14,6 +14,7 @@ const FIELDS = [
   { key: "touchdowns", label: "Touchdowns", hint: "Ran it in or caught it", good: true },
   { key: "receptions", label: "Receptions", hint: "Catches", good: true },
   { key: "interceptions", label: "Interceptions", hint: "Picks on defense", good: true },
+  { key: "forced_fumbles", label: "Forced fumbles", hint: "Knocked the ball loose on defense", good: true },
   { key: "drops", label: "Drops", hint: "Catchable balls dropped", good: false },
   { key: "fumbles", label: "Fumbles", hint: "Ball on the ground", good: false },
 ] as const;
@@ -30,6 +31,7 @@ const empty: Record<Key, number> = {
   touchdowns: 0,
   receptions: 0,
   interceptions: 0,
+  forced_fumbles: 0,
   drops: 0,
   fumbles: 0,
   pass_attempts: 0,
@@ -106,6 +108,7 @@ export function StatLogger({
             interceptions: counts.interceptions,
             drops: counts.drops,
             fumbles: counts.fumbles,
+            ...(counts.forced_fumbles ? { forced_fumbles: counts.forced_fumbles } : {}),
             ...passing,
           }),
       );
@@ -270,6 +273,7 @@ function LoggedLine({ line, label }: { line: StatLine; label: string }) {
     line.touchdowns && `${line.touchdowns} TD`,
     line.receptions && `${line.receptions} REC`,
     line.interceptions && `${line.interceptions} INT`,
+    line.forced_fumbles && `${line.forced_fumbles} FF`,
     line.drops && `${line.drops} DRP`,
     line.fumbles && `${line.fumbles} FUM`,
   ]

@@ -10,6 +10,7 @@ type Counts = Pick<StatTotals, "games" | "touchdowns" | "interceptions" | "fumbl
  * automatically rated higher. Early on the rating is pulled toward 60 until a
  * player has 3+ games logged, so one monster game doesn't make you a 99.
  *
+ * Defense: interceptions and forced fumbles both add.
  * Passing counts for anyone who threw: TD passes and completion % add, picks
  * thrown subtract. It stacks with everything else, so a QB who also rushes,
  * catches, or plays defense gets credit for all of it.
@@ -22,6 +23,7 @@ export function computeOvr(s: Counts | null | undefined): number | null {
     60 +
     8 * per(s.touchdowns) +
     12 * per(s.interceptions) +
+    8 * per(s.forced_fumbles) +
     2 * per(s.receptions) -
     6 * per(s.fumbles) -
     4 * per(s.drops);
@@ -71,6 +73,7 @@ export function sumLines(lines: Omit<Counts, "games">[]): Counts {
       pass_attempts: (acc.pass_attempts ?? 0) + (l.pass_attempts ?? 0),
       pass_tds: (acc.pass_tds ?? 0) + (l.pass_tds ?? 0),
       ints_thrown: (acc.ints_thrown ?? 0) + (l.ints_thrown ?? 0),
+      forced_fumbles: (acc.forced_fumbles ?? 0) + (l.forced_fumbles ?? 0),
     }),
     {
       games: 0,
@@ -83,6 +86,7 @@ export function sumLines(lines: Omit<Counts, "games">[]): Counts {
       pass_attempts: 0,
       pass_tds: 0,
       ints_thrown: 0,
+      forced_fumbles: 0,
     },
   );
 }

@@ -70,12 +70,13 @@ export type StatLine = {
   created_at: string;
 } & Partial<PassingStats>;
 
-/** QB numbers. Optional because rows from before the QB-stats migration lack them. */
+/** Stats added after launch. Optional because rows from before their migration lack them. */
 export type PassingStats = {
   pass_completions: number;
   pass_attempts: number;
   pass_tds: number;
   ints_thrown: number;
+  forced_fumbles: number;
 };
 
 export type StatTotals = {
