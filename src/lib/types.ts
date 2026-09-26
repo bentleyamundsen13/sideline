@@ -76,8 +76,10 @@ export type PassingStats = {
   pass_attempts: number;
   pass_tds: number;
   ints_thrown: number;
+  /** Retired stat: still stored, no longer shown or counted. */
   forced_fumbles: number;
   tackles: number;
+  pass_breakups: number;
 };
 
 export type StatTotals = {

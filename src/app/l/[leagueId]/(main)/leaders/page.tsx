@@ -13,7 +13,7 @@ const CATEGORIES: LeaderCategory[] = [
   { key: "passTd", label: "Passing TDs" },
   { key: "tkl", label: "Tackles" },
   { key: "int", label: "Interceptions" },
-  { key: "ff", label: "Forced fumbles" },
+  { key: "pbu", label: "Pass breakups" },
   { key: "catch", label: "Catch %", unit: "%" },
 ];
 
@@ -43,7 +43,7 @@ export default async function LeadersPage({ params }: PageProps<"/l/[leagueId]/l
           passTd: s?.pass_tds ?? 0,
           tkl: s?.tackles ?? 0,
           int: s?.interceptions ?? 0,
-          ff: s?.forced_fumbles ?? 0,
+          pbu: s?.pass_breakups ?? 0,
           catch: targets >= 5 ? catchRate(s) : null,
         },
       };

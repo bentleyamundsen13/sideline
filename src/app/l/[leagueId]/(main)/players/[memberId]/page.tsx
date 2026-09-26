@@ -57,7 +57,7 @@ export default async function PlayerPage({ params }: PageProps<"/l/[leagueId]/pl
     { label: "FUM", value: totals?.fumbles ?? 0 },
     { label: "TKL", value: totals?.tackles ?? 0 },
     { label: "INT", value: totals?.interceptions ?? 0 },
-    { label: "FF", value: totals?.forced_fumbles ?? 0 },
+    { label: "PBU", value: totals?.pass_breakups ?? 0 },
   ];
 
   const cmp = completionPct(totals);
@@ -152,7 +152,7 @@ export default async function PlayerPage({ params }: PageProps<"/l/[leagueId]/pl
           )}
         </div>
         <p className="text-xs text-muted mt-2 px-1">
-          OVR is built from per-game touchdowns, receptions, tackles, interceptions and forced fumbles, minus drops and fumbles. QBs also get
+          OVR is built from per-game touchdowns, receptions, tackles, interceptions and pass breakups, minus drops and fumbles. QBs also get
           credit for TD passes and completion %, and lose points for interceptions thrown. It settles in after 3 games.
         </p>
       </section>
@@ -182,7 +182,7 @@ export default async function PlayerPage({ params }: PageProps<"/l/[leagueId]/pl
                   <th className="font-semibold px-2">REC</th>
                   <th className="font-semibold px-2">TKL</th>
                   <th className="font-semibold px-2">INT</th>
-                  <th className="font-semibold px-2">FF</th>
+                  <th className="font-semibold px-2">PBU</th>
                   <th className="font-semibold px-2">DRP</th>
                   <th className="font-semibold px-2 pr-4">FUM</th>
                 </tr>
@@ -216,7 +216,7 @@ export default async function PlayerPage({ params }: PageProps<"/l/[leagueId]/pl
                       <td className="text-center px-2">{l.receptions}</td>
                       <td className="text-center px-2">{l.tackles ?? 0}</td>
                       <td className="text-center px-2">{l.interceptions}</td>
-                      <td className="text-center px-2">{l.forced_fumbles ?? 0}</td>
+                      <td className="text-center px-2">{l.pass_breakups ?? 0}</td>
                       <td className="text-center px-2">{l.drops}</td>
                       <td className="text-center px-2 pr-4">{l.fumbles}</td>
                     </tr>

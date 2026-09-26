@@ -43,7 +43,7 @@ Push to GitHub, import the repo in Vercel, add the same two env vars, deploy.
 Computed in [`src/lib/ovr.ts`](src/lib/ovr.ts) from per-game averages:
 
 ```
-60 + 8·TD + 12·INT + 8·FF + 1.5·TKL + 2·REC − 6·FUM − 4·DROPS      (per game)
+60 + 8·TD + 12·INT + 4·PBU + 1.5·TKL + 2·REC − 6·FUM − 4·DROPS     (per game)
    + 8·PASS_TD − 8·INT_THROWN + 40·(CMP% − 55%)·volume            (if they threw)
 ```
 
@@ -60,6 +60,7 @@ these you haven't yet (each is safe to run twice):
 - [`005_forced_fumbles.sql`](supabase/migrations/005_forced_fumbles.sql): forced fumbles stat
 - [`006_tackles.sql`](supabase/migrations/006_tackles.sql): tackles stat
 - [`007_player_of_the_game.sql`](supabase/migrations/007_player_of_the_game.sql): Player of the Game announcements
+- [`008_pass_breakups.sql`](supabase/migrations/008_pass_breakups.sql): pass breakups (replaces forced fumbles in the app)
 
 ## Push notifications
 
