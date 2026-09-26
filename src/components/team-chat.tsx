@@ -83,7 +83,11 @@ export function TeamChat({
       nearBottom.current = true;
       setMessages((prev) => (prev.some((x) => x.id === data.id) ? prev : [...prev, data as TeamMessage]));
       setDraft("");
-      inputRef.current?.focus();
+      if (inputRef.current) {
+        inputRef.current.style.height = "auto";
+        inputRef.current.style.overflowY = "hidden";
+        inputRef.current.focus();
+      }
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -158,6 +162,8 @@ export function TeamChat({
               setDraft(e.target.value);
               e.target.style.height = "auto";
               e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+              // Only scroll once it's grown to its max height.
+              e.target.style.overflowY = e.target.scrollHeight > 120 ? "auto" : "hidden";
             }}
             onKeyDown={(e) => {
               // Enter sends on a keyboard; Shift+Enter for a new line.
@@ -168,7 +174,7 @@ export function TeamChat({
             }}
             placeholder="Message your team"
             aria-label="Message your team"
-            className="input !rounded-3xl !py-2.5 resize-none max-h-[120px] leading-snug"
+            className="input !rounded-3xl !py-2.5 resize-none max-h-[120px] leading-snug overflow-hidden no-scrollbar"
           />
           <button
             type="submit"
