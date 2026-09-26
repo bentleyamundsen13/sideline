@@ -4,13 +4,18 @@ import { initials, textOn } from "@/lib/format";
 import { ovrTier } from "@/lib/ovr";
 import type { Member, Team } from "@/lib/types";
 import { FREE_AGENT_COLOR } from "@/lib/constants";
+import { BALL_PATH, BRAND, INK } from "@/lib/logo-svg";
 
+/** The Sideline mark (see src/lib/logo-svg.ts for the shared geometry). */
 export function Logo({ size = 28 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
-      <rect width="32" height="32" rx="8" fill="var(--brand)" />
-      <path d="M9 7v18M16 7v18M23 7v18" stroke="#0a0c10" strokeWidth="2.4" strokeLinecap="round" opacity=".9" />
-      <path d="M6 16h20" stroke="#0a0c10" strokeWidth="2.4" strokeLinecap="round" />
+      <rect width="32" height="32" rx="8" fill={BRAND} />
+      <g transform="rotate(-35 16 16)">
+        <path d={BALL_PATH} fill={INK} />
+        <path d="M11 16 H21" stroke={BRAND} strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M12.8 13.6 V18.4 M16 13.6 V18.4 M19.2 13.6 V18.4" stroke={BRAND} strokeWidth="1.7" strokeLinecap="round" />
+      </g>
     </svg>
   );
 }
