@@ -40,18 +40,8 @@ export default async function ChatPage({ params }: PageProps<"/l/[leagueId]/chat
   const roster = rosterOf(ctx, myTeam.id);
 
   return (
-    <div>
+    <>
       <TeamTheme color={myTeam.color} />
-      <div className="flex items-center gap-3 pb-3 mb-2 border-b border-line">
-        <TeamBadge team={myTeam} size={40} />
-        <div className="min-w-0 flex-1">
-          <h1 className="display text-2xl truncate">{myTeam.name}</h1>
-          <p className="text-xs text-muted truncate">
-            <MessageCircle size={11} className="inline -mt-0.5 mr-1" />
-            Team chat · {roster.map((m) => m.display_name.split(" ")[0]).join(", ")}
-          </p>
-        </div>
-      </div>
       <TeamChat
         leagueId={leagueId}
         teamId={myTeam.id}
@@ -59,7 +49,19 @@ export default async function ChatPage({ params }: PageProps<"/l/[leagueId]/chat
         meId={me.id}
         members={members.map((m) => ({ id: m.id, display_name: m.display_name, avatar_url: m.avatar_url }))}
         initial={initial}
+        header={
+          <div className="flex items-center gap-3 pb-3 border-b border-line">
+            <TeamBadge team={myTeam} size={40} />
+            <div className="min-w-0 flex-1">
+              <h1 className="display text-2xl truncate">{myTeam.name}</h1>
+              <p className="text-xs text-muted truncate">
+                <MessageCircle size={11} className="inline -mt-0.5 mr-1" />
+                Team chat · {roster.map((m) => m.display_name.split(" ")[0]).join(", ")}
+              </p>
+            </div>
+          </div>
+        }
       />
-    </div>
+    </>
   );
 }

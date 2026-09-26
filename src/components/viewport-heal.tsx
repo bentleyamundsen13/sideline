@@ -3,13 +3,16 @@
 import { useEffect } from "react";
 
 /**
- * iOS home-screen apps have a WebKit bug: the first time the keyboard opens the
- * page shrinks, and it never grows back until the app is force-quit. Anything
- * pinned to the bottom (the tab bar) then floats with a dead band underneath.
+ * iOS home-screen apps have two keyboard bugs that leave bottom-pinned bars
+ * (the tab bar) floating with a dead band underneath once the keyboard closes:
  *
- * Known fix: after the keyboard closes, briefly hide and re-show the page so
- * iOS re-measures the screen. Runs after any text box loses focus, app-wide.
- * https://dev.to/cederhook/fixing-the-ios-standalone-pwa-keyboard-bug-that-shrinks-your-viewport-for-good-63d
+ *  1. On a scrolled page, iOS leaves the page shifted (visualViewport.offsetTop
+ *     doesn't reset). Jumping to the top and straight back makes it re-anchor.
+ *  2. On some versions the page shrinks and never grows back. Briefly hiding and
+ *     re-showing the page makes iOS re-measure the screen.
+ *     https://dev.to/cederhook/fixing-the-ios-standalone-pwa-keyboard-bug-that-shrinks-your-viewport-for-good-63d
+ *
+ * Runs after any text box loses focus, app-wide.
  */
 export function ViewportHeal() {
   useEffect(() => {
@@ -19,15 +22,19 @@ export function ViewportHeal() {
     };
 
     const heal = () => {
-      // A text box is still focused (e.g. moved from one field to the next): keyboard is still up.
+      // Moved from one field to the next: the keyboard is still up.
       if (isTextField(document.activeElement)) return;
-      if (tallest - window.innerHeight <= 4) return;
+      const x = window.scrollX;
       const y = window.scrollY;
-      const body = document.body;
-      body.style.display = "none";
-      void body.offsetHeight; // force iOS to lay out again with the real screen size
-      body.style.display = "";
-      window.scrollTo(window.scrollX, y);
+      if (tallest - window.innerHeight > 4) {
+        const body = document.body;
+        body.style.display = "none";
+        void body.offsetHeight; // force a re-layout at the real screen size
+        body.style.display = "";
+      }
+      // A 1px nudge does nothing at the bottom of a page, so jump to the top and back.
+      window.scrollTo(x, 0);
+      window.scrollTo(x, y);
     };
 
     const timers: number[] = [];

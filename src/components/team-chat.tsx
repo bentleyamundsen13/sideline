@@ -17,6 +17,7 @@ export function TeamChat({
   meId,
   members,
   initial,
+  header,
 }: {
   leagueId: string;
   teamId: string;
@@ -24,6 +25,7 @@ export function TeamChat({
   meId: string;
   members: ChatMember[];
   initial: TeamMessage[];
+  header: React.ReactNode;
 }) {
   const [messages, setMessages] = useState(initial);
   const [draft, setDraft] = useState("");
@@ -42,6 +44,7 @@ export function TeamChat({
     return () => document.documentElement.removeAttribute("data-keyboard-open");
   }, [keyboardOpen]);
   const nearBottom = useRef(true);
+  const scroller = useRef<HTMLDivElement>(null);
   const memberById = new Map(members.map((m) => [m.id, m]));
 
   // Live messages from teammates.
@@ -64,18 +67,10 @@ export function TeamChat({
     markChatSeen(teamId);
   }, [teamId, messages.length]);
 
-  useEffect(() => {
-    const onScroll = () => {
-      nearBottom.current = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 160;
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
   // Start at the newest message; follow new ones if you're already at the bottom.
   useLayoutEffect(() => {
-    // Scroll the page itself to the end so the newest message clears the message box and tab bar.
-    if (nearBottom.current) window.scrollTo({ top: document.documentElement.scrollHeight });
+    const el = scroller.current;
+    if (el && nearBottom.current) el.scrollTop = el.scrollHeight;
   }, [messages.length, keyboardOpen, overlap]);
 
   async function send() {
@@ -108,8 +103,25 @@ export function TeamChat({
   const bubbleText = textOn(teamColor);
 
   return (
-    <>
-      <div className="space-y-1 pb-28">
+    // The page itself never scrolls; only the message list inside this panel does.
+    // A scrolled page is what iOS leaves shifted after the keyboard closes.
+    <div
+      className="fixed inset-x-0 z-30 bg-bg"
+      style={{
+        top: "calc(3.5rem + 1px + env(safe-area-inset-top))",
+        bottom: keyboardOpen ? overlap : "calc(4rem + 1px + min(env(safe-area-inset-bottom), 34px))",
+      }}
+    >
+      <div className="mx-auto max-w-3xl h-full flex flex-col">
+      <div className="shrink-0 px-4 pt-4">{header}</div>
+      <div
+        ref={scroller}
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          nearBottom.current = el.scrollTop + el.clientHeight >= el.scrollHeight - 160;
+        }}
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pb-3 space-y-1"
+      >
         {messages.length === 0 && (
           <div className="text-center py-16 text-muted">
             <p className="font-semibold text-text">No messages yet</p>
@@ -158,11 +170,10 @@ export function TeamChat({
           e.preventDefault();
           send();
         }}
-        className="chat-composer fixed inset-x-0 z-30 bg-bg border-t border-line"
-        style={{ bottom: keyboardOpen ? overlap : "calc(4rem + min(env(safe-area-inset-bottom), 34px))" }}
+        className="chat-composer shrink-0 border-t border-line"
       >
-        {error && <p className="text-xs text-danger px-4 pt-2 mx-auto max-w-3xl">{error}</p>}
-        <div className="mx-auto max-w-3xl flex items-end gap-2 px-3 py-2.5">
+        {error && <p className="text-xs text-danger px-4 pt-2">{error}</p>}
+        <div className="flex items-end gap-2 px-3 py-2.5">
           <textarea
             ref={inputRef}
             rows={1}
@@ -201,7 +212,8 @@ export function TeamChat({
           </button>
         </div>
       </form>
-    </>
+      </div>
+    </div>
   );
 }
 
