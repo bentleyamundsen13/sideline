@@ -152,8 +152,8 @@ export default async function PlayerPage({ params }: PageProps<"/l/[leagueId]/pl
           )}
         </div>
         <p className="text-xs text-muted mt-2 px-1">
-          OVR is built from per-game touchdowns, receptions, tackles, interceptions and pass breakups, minus drops and fumbles. QBs also get
-          credit for TD passes and completion %, and lose points for interceptions thrown. It settles in after 3 games.
+          OVR compares your per-game production with others in the league who play the same role (receiver, passer,
+          defender). 70 is average. It takes several games to move far from 70, and each point gets harder near the top.
         </p>
       </section>
 

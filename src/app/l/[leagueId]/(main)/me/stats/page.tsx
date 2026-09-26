@@ -9,7 +9,7 @@ export const metadata = { title: "Log stats" };
 
 export default async function StatsPage({ params }: PageProps<"/l/[leagueId]/me/stats">) {
   const { leagueId } = await params;
-  const { me, games, teamById, supabase } = await getLeagueContext(leagueId);
+  const { me, games, teamById, supabase, ovrModel } = await getLeagueContext(leagueId);
 
   const { data } = await supabase
     .from("stat_lines")
@@ -54,7 +54,7 @@ export default async function StatsPage({ params }: PageProps<"/l/[leagueId]/me/
       <h1 className="display text-4xl mt-4">Log stats</h1>
       <p className="text-sm text-muted mt-1 mb-6">Be honest. Your league can see every number.</p>
       {/* Remount after each save so the game picker moves to the next unlogged game. */}
-      <StatLogger key={lines.length} leagueId={leagueId} memberId={me.id} isQb={me.offense_position === "QB"} gameOptions={gameOptions} lines={lines} lineLabels={lineLabels} />
+      <StatLogger key={lines.length} leagueId={leagueId} memberId={me.id} isQb={me.offense_position === "QB"} gameOptions={gameOptions} lines={lines} lineLabels={lineLabels} ovrModel={ovrModel} />
     </div>
   );
 }

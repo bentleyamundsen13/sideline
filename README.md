@@ -40,14 +40,18 @@ Push to GitHub, import the repo in Vercel, add the same two env vars, deploy.
 
 ### OVR
 
-Computed in [`src/lib/ovr.ts`](src/lib/ovr.ts) from per-game averages:
+Computed in [`src/lib/ovr.ts`](src/lib/ovr.ts). OVR is league-relative and role-aware, 40–99 with 70 = average:
 
-```
-60 + 8·TD + 12·INT + 4·PBU + 1.5·TKL + 2·REC − 6·FUM − 4·DROPS     (per game)
-   + 8·PASS_TD − 8·INT_THROWN + 40·(CMP% − 55%)·volume            (if they threw)
-```
-
-`volume` ramps from 0 to 1 as a QB approaches 10 attempts per game.
+1. **Production per game, per role:**
+   - Receiving/rushing: `8·TD + 2·REC − 4·DROPS − 6·FUM`
+   - Passing: `8·PASS_TD − 8·INT_THROWN + 40·(CMP% − league CMP%)·volume` (volume ramps to 1 at 10 attempts/game)
+   - Defense: `12·INT + 4·PBU + 1.5·TKL`
+2. **Roles** only count once you play them (1.5 touches, 3 throws or 2 defensive plays per game). Each role is
+   compared only with players who play it.
+3. **Sample size:** each role starts at 6 league-average games; real games gradually outweigh them.
+4. **Scale:** distance from the role's league average, in standard deviations (with sensible priors while the
+   league is new). Best role counts; being above average in a second role adds 30% of that as a bonus.
+5. **Curve:** `70 + 29·tanh(z/2.2)` above average, `70 + 30·tanh(z/2)` below, so gains flatten toward 99.
 
 ## Upgrading an existing database
 

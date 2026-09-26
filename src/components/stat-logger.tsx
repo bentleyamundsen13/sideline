@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { must, useAction } from "@/lib/use-action";
-import { completionPct, computeOvr, sumLines } from "@/lib/ovr";
+import { completionPct, computeOvr, sumLines, type OvrModel } from "@/lib/ovr";
 import { formatGameDate } from "@/lib/format";
 import type { StatLine } from "@/lib/types";
 import { FormError } from "./form-error";
@@ -55,10 +55,12 @@ export function StatLogger({
   gameOptions,
   lines,
   lineLabels,
+  ovrModel,
 }: {
   leagueId: string;
   memberId: string;
   isQb: boolean;
+  ovrModel: OvrModel;
   gameOptions: { id: string; label: string; date: string }[];
   lines: StatLine[];
   lineLabels: Record<string, string>;
@@ -70,8 +72,8 @@ export function StatLogger({
   const [showPassing, setShowPassing] = useState(isQb);
   const [saved, setSaved] = useState(false);
 
-  const currentOvr = computeOvr(sumLines(lines));
-  const previewOvr = computeOvr(sumLines([...lines, counts]));
+  const currentOvr = computeOvr(sumLines(lines), ovrModel);
+  const previewOvr = computeOvr(sumLines([...lines, counts]), ovrModel);
 
   /** Keeps completions <= attempts whichever one changes. */
   const setCount = (k: Key, raw: number) =>

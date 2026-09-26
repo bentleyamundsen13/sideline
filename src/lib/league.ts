@@ -2,7 +2,7 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "./supabase/server";
 import { getAuthUser } from "./auth";
-import { computeOvr } from "./ovr";
+import { buildOvrModel, computeOvr } from "./ovr";
 import { computeRecords, standings } from "./records";
 import type { Game, League, Member, StatTotals, Team } from "./types";
 
@@ -41,7 +41,9 @@ export const getLeagueContext = cache(async (leagueId: string) => {
   const teamById = new Map(teams.map((t) => [t.id, t]));
   const memberById = new Map(members.map((m) => [m.id, m]));
   const statsByMember = new Map(stats.map((s) => [s.member_id, s]));
-  const ovrByMember = new Map(members.map((m) => [m.id, computeOvr(statsByMember.get(m.id))]));
+  // OVR is relative to the league, so learn the league's averages first.
+  const ovrModel = buildOvrModel(stats);
+  const ovrByMember = new Map(members.map((m) => [m.id, computeOvr(statsByMember.get(m.id), ovrModel)]));
   const records = computeRecords(teams, games);
   const ranked = standings(teams, records);
   const captainTeam = teams.find((t) => t.captain_id === me.id) ?? null;
@@ -67,6 +69,7 @@ export const getLeagueContext = cache(async (leagueId: string) => {
     teamById,
     memberById,
     statsByMember,
+    ovrModel,
     ovrByMember,
     records,
     ranked,
