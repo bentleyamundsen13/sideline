@@ -14,7 +14,9 @@ const barlow = Barlow_Condensed({
 export const metadata: Metadata = {
   title: { default: "Sideline", template: "%s · Sideline" },
   description: "Run your backyard league like the pros. Teams, drafts, trades, stats and standings.",
-  appleWebApp: { capable: true, title: "Sideline", statusBarStyle: "black-translucent" },
+  // Opaque status bar: with "black-translucent" the page runs under the clock and
+  // iOS blurs that strip, which smeared the top half of our header.
+  appleWebApp: { capable: true, title: "Sideline", statusBarStyle: "black" },
   // Next only emits the newer tag; older iOS versions still look for this one.
   other: { "apple-mobile-web-app-capable": "yes" },
 };

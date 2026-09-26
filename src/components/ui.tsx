@@ -100,7 +100,7 @@ export function OvrBadge({
       }}
       title={ovr == null ? "Not rated yet. Log a game to get an OVR." : `Overall rating ${ovr}`}
     >
-      {ovr ?? "NR"}
+      {ovr ?? "–"}
       {showLabel && <span className="text-[9px] tracking-widest opacity-70 mt-0.5">OVR</span>}
     </span>
   );
