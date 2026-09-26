@@ -6,6 +6,7 @@ import { InstallGuide } from "@/components/install-guide";
 import { ViewportHeal } from "@/components/viewport-heal";
 import { DebugOverlay } from "@/components/debug-overlay";
 import { Splash } from "@/components/splash";
+import { launchStartupImages } from "@/lib/launch-screens";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 const barlow = Barlow_Condensed({
@@ -19,7 +20,7 @@ export const metadata: Metadata = {
   description: "Run your backyard league like the pros. Teams, drafts, trades, stats and standings.",
   // Opaque status bar: with "black-translucent" the page runs under the clock and
   // iOS blurs that strip, which smeared the top half of our header.
-  appleWebApp: { capable: true, title: "Sideline", statusBarStyle: "black" },
+  appleWebApp: { capable: true, title: "Sideline", statusBarStyle: "black", startupImage: launchStartupImages },
   // Next only emits the newer tag; older iOS versions still look for this one.
   other: { "apple-mobile-web-app-capable": "yes" },
 };
