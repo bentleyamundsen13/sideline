@@ -35,7 +35,7 @@ function TeamView({ ctx, team }: { ctx: LeagueContext; team: Team }) {
   const nextGame = teamGames.find((g) => g.status === "scheduled");
   const lastGame = [...teamGames].reverse().find((g) => g.status === "final");
 
-  const leader = (key: "touchdowns" | "receptions" | "interceptions") => {
+  const leader = (key: "touchdowns" | "receptions" | "interceptions" | "pass_tds") => {
     let best: { name: string; id: string; value: number } | null = null;
     for (const m of roster) {
       const v = statsByMember.get(m.id)?.[key] ?? 0;
@@ -125,10 +125,11 @@ function TeamView({ ctx, team }: { ctx: LeagueContext; team: Team }) {
 
       <section>
         <SectionHeader title="Team leaders" />
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {(
             [
               ["TD", leader("touchdowns")],
+              ["PASS TD", leader("pass_tds")],
               ["REC", leader("receptions")],
               ["INT", leader("interceptions")],
             ] as const

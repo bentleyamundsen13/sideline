@@ -41,15 +41,19 @@ export default async function LeagueHome({ params }: PageProps<"/l/[leagueId]">)
     .sort((a, b) => b.ovr! - a.ovr!)
     .slice(0, 5);
 
-  const leader = (key: "touchdowns" | "interceptions" | "receptions") => {
+  const leader = (key: "touchdowns" | "interceptions" | "receptions" | "pass_tds") => {
     let best: { id: string; value: number } | null = null;
-    for (const [id, s] of statsByMember) if (s[key] > 0 && (!best || s[key] > best.value)) best = { id, value: s[key] };
+    for (const [id, s] of statsByMember) {
+      const v = s[key] ?? 0;
+      if (v > 0 && (!best || v > best.value)) best = { id, value: v };
+    }
     return best ? { member: ctx.memberById.get(best.id)!, value: best.value } : null;
   };
   const leaders = [
     { label: "Touchdowns", l: leader("touchdowns") },
-    { label: "Interceptions", l: leader("interceptions") },
+    { label: "Passing TDs", l: leader("pass_tds") },
     { label: "Receptions", l: leader("receptions") },
+    { label: "Interceptions", l: leader("interceptions") },
   ];
 
   const callouts: { href: string; icon: typeof Zap; title: string; body: string; strong?: boolean }[] = [];
@@ -190,7 +194,7 @@ export default async function LeagueHome({ params }: PageProps<"/l/[leagueId]">)
       {rated.length > 0 && (
         <section>
           <SectionHeader title="League leaders" />
-          <div className="grid grid-cols-3 gap-2 mb-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
             {leaders.map(({ label, l }) => (
               <div key={label} className="card p-3">
                 <div className="text-[10px] uppercase tracking-widest text-muted font-semibold">{label}</div>

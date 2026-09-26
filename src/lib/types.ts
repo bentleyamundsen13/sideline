@@ -68,6 +68,14 @@ export type StatLine = {
   receptions: number;
   drops: number;
   created_at: string;
+} & Partial<PassingStats>;
+
+/** QB numbers. Optional because rows from before the QB-stats migration lack them. */
+export type PassingStats = {
+  pass_completions: number;
+  pass_attempts: number;
+  pass_tds: number;
+  ints_thrown: number;
 };
 
 export type StatTotals = {
@@ -78,7 +86,7 @@ export type StatTotals = {
   fumbles: number;
   receptions: number;
   drops: number;
-};
+} & Partial<PassingStats>;
 
 export type News = {
   id: string;

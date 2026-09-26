@@ -43,7 +43,13 @@ Push to GitHub, import the repo in Vercel, add the same two env vars, deploy.
 Computed in [`src/lib/ovr.ts`](src/lib/ovr.ts) from per-game averages:
 
 ```
-60 + 8·TD + 12·INT + 2·REC − 6·FUM − 4·DROPS   (per game)
+60 + 8·TD + 12·INT + 2·REC − 6·FUM − 4·DROPS                       (per game)
+   + 8·PASS_TD − 8·INT_THROWN + 40·(CMP% − 55%)·volume            (if they threw)
 ```
+
+`volume` ramps from 0 to 1 as a QB approaches 10 attempts per game.
+
+If you set up Supabase before QB stats existed, run
+[`supabase/migrations/002_qb_stats.sql`](supabase/migrations/002_qb_stats.sql) once.
 
 Pulled toward 60 until a player has 3 games logged, clamped to 40–99. Tweak the weights there.

@@ -4,22 +4,40 @@ import { useState } from "react";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { must, useAction } from "@/lib/use-action";
-import { computeOvr, sumLines } from "@/lib/ovr";
+import { completionPct, computeOvr, sumLines } from "@/lib/ovr";
 import { formatGameDate } from "@/lib/format";
 import type { StatLine } from "@/lib/types";
 import { FormError } from "./form-error";
 import { OvrBadge } from "./ui";
 
 const FIELDS = [
-  { key: "touchdowns", label: "Touchdowns", hint: "Scored or thrown", good: true },
+  { key: "touchdowns", label: "Touchdowns", hint: "Ran it in or caught it", good: true },
   { key: "receptions", label: "Receptions", hint: "Catches", good: true },
   { key: "interceptions", label: "Interceptions", hint: "Picks on defense", good: true },
   { key: "drops", label: "Drops", hint: "Catchable balls dropped", good: false },
   { key: "fumbles", label: "Fumbles", hint: "Ball on the ground", good: false },
 ] as const;
 
-type Key = (typeof FIELDS)[number]["key"];
-const empty: Record<Key, number> = { touchdowns: 0, receptions: 0, interceptions: 0, drops: 0, fumbles: 0 };
+const PASS_FIELDS = [
+  { key: "pass_attempts", label: "Pass attempts", hint: "Every throw", good: true },
+  { key: "pass_completions", label: "Completions", hint: "Throws that were caught", good: true },
+  { key: "pass_tds", label: "TD passes", hint: "Touchdowns you threw", good: true },
+  { key: "ints_thrown", label: "Interceptions thrown", hint: "Your passes the defense picked", good: false },
+] as const;
+
+type Key = (typeof FIELDS)[number]["key"] | (typeof PASS_FIELDS)[number]["key"];
+const empty: Record<Key, number> = {
+  touchdowns: 0,
+  receptions: 0,
+  interceptions: 0,
+  drops: 0,
+  fumbles: 0,
+  pass_attempts: 0,
+  pass_completions: 0,
+  pass_tds: 0,
+  ints_thrown: 0,
+};
+const MAX: Partial<Record<Key, number>> = { pass_attempts: 200, pass_completions: 200 };
 
 function localToday() {
   const d = new Date();
@@ -29,12 +47,14 @@ function localToday() {
 export function StatLogger({
   leagueId,
   memberId,
+  isQb,
   gameOptions,
   lines,
   lineLabels,
 }: {
   leagueId: string;
   memberId: string;
+  isQb: boolean;
   gameOptions: { id: string; label: string; date: string }[];
   lines: StatLine[];
   lineLabels: Record<string, string>;
@@ -43,16 +63,35 @@ export function StatLogger({
   const [gameId, setGameId] = useState(gameOptions[0]?.id ?? "");
   const [date, setDate] = useState(localToday);
   const [counts, setCounts] = useState(empty);
+  const [showPassing, setShowPassing] = useState(isQb);
   const [saved, setSaved] = useState(false);
 
   const currentOvr = computeOvr(sumLines(lines));
   const previewOvr = computeOvr(sumLines([...lines, counts]));
 
-  const bump = (k: Key, d: number) => setCounts((c) => ({ ...c, [k]: Math.max(0, Math.min(99, c[k] + d)) }));
+  /** Keeps completions <= attempts whichever one changes. */
+  const setCount = (k: Key, raw: number) =>
+    setCounts((c) => {
+      const v = Math.max(0, Math.min(MAX[k] ?? 99, Math.round(raw) || 0));
+      const next = { ...c, [k]: v };
+      if (k === "pass_attempts" && next.pass_completions > v) next.pass_completions = v;
+      if (k === "pass_completions" && v > next.pass_attempts) next.pass_attempts = v;
+      return next;
+    });
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const game = gameOptions.find((g) => g.id === gameId);
+    // Only send passing columns when used, so non-QB logging never depends on them.
+    const passing =
+      counts.pass_attempts || counts.pass_tds || counts.ints_thrown
+        ? {
+            pass_attempts: counts.pass_attempts,
+            pass_completions: counts.pass_completions,
+            pass_tds: counts.pass_tds,
+            ints_thrown: counts.ints_thrown,
+          }
+        : {};
     const ok = await run(async () => {
       await must(
         createClient()
@@ -62,7 +101,12 @@ export function StatLogger({
             member_id: memberId,
             game_id: game?.id ?? null,
             played_on: game?.date ?? date,
-            ...counts,
+            touchdowns: counts.touchdowns,
+            receptions: counts.receptions,
+            interceptions: counts.interceptions,
+            drops: counts.drops,
+            fumbles: counts.fumbles,
+            ...passing,
           }),
       );
       return true;
@@ -73,6 +117,8 @@ export function StatLogger({
       setTimeout(() => setSaved(false), 2500);
     }
   }
+
+  const pct = completionPct(counts);
 
   return (
     <div className="space-y-8">
@@ -97,25 +143,32 @@ export function StatLogger({
           )}
         </div>
 
-        <div className="card divide-y divide-line">
-          {FIELDS.map((f) => (
-            <div key={f.key} className="flex items-center gap-3 px-4 py-3">
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold text-sm">{f.label}</div>
-                <div className="text-xs text-muted">{f.hint}</div>
-              </div>
-              <button type="button" className="w-10 h-10 rounded-xl bg-surface-2 border border-line inline-flex items-center justify-center disabled:opacity-40" onClick={() => bump(f.key, -1)} disabled={counts[f.key] === 0} aria-label={`Fewer ${f.label}`}>
-                <Minus size={16} />
-              </button>
-              <span className={`display text-3xl w-10 text-center tabular ${counts[f.key] > 0 ? (f.good ? "text-text" : "text-danger") : "text-muted"}`}>
-                {counts[f.key]}
-              </span>
-              <button type="button" className="w-10 h-10 rounded-xl bg-surface-2 border border-line inline-flex items-center justify-center" onClick={() => bump(f.key, 1)} aria-label={`More ${f.label}`}>
-                <Plus size={16} />
-              </button>
+        {showPassing ? (
+          <section>
+            <div className="flex items-center justify-between px-1 mb-2">
+              <h2 className="section-title">Passing</h2>
+              {pct != null && <span className="text-xs text-muted tabular">{pct}% completed</span>}
             </div>
-          ))}
-        </div>
+            <div className="card divide-y divide-line">
+              {PASS_FIELDS.map((f) => (
+                <Counter key={f.key} label={f.label} hint={f.hint} good={f.good} value={counts[f.key]} onChange={(v) => setCount(f.key, v)} />
+              ))}
+            </div>
+          </section>
+        ) : (
+          <button type="button" className="btn btn-secondary w-full" onClick={() => setShowPassing(true)}>
+            <Plus size={16} /> I played QB (add passing stats)
+          </button>
+        )}
+
+        <section>
+          <h2 className="section-title px-1 mb-2">{showPassing ? "Running, catching & defense" : "Stats"}</h2>
+          <div className="card divide-y divide-line">
+            {FIELDS.map((f) => (
+              <Counter key={f.key} label={f.label} hint={f.hint} good={f.good} value={counts[f.key]} onChange={(v) => setCount(f.key, v)} />
+            ))}
+          </div>
+        </section>
 
         <div className="card p-4 flex items-center gap-4">
           <div className="flex-1">
@@ -154,9 +207,66 @@ export function StatLogger({
   );
 }
 
+function Counter({
+  label,
+  hint,
+  good,
+  value,
+  onChange,
+}: {
+  label: string;
+  hint: string;
+  good: boolean;
+  value: number;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <div className="flex items-center gap-2.5 px-4 py-3">
+      <div className="flex-1 min-w-0">
+        <div className="font-semibold text-sm">{label}</div>
+        <div className="text-xs text-muted">{hint}</div>
+      </div>
+      <button
+        type="button"
+        className="w-10 h-10 shrink-0 rounded-xl bg-surface-2 border border-line inline-flex items-center justify-center disabled:opacity-40"
+        onClick={() => onChange(value - 1)}
+        disabled={value === 0}
+        aria-label={`Fewer ${label}`}
+      >
+        <Minus size={16} />
+      </button>
+      <input
+        type="number"
+        inputMode="numeric"
+        aria-label={label}
+        value={value}
+        onFocus={(e) => e.target.select()}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className={`w-12 bg-transparent text-center display text-3xl tabular outline-none rounded-lg focus:bg-surface-2 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none ${
+          value > 0 ? (good ? "text-text" : "text-danger") : "text-muted"
+        }`}
+      />
+      <button
+        type="button"
+        className="w-10 h-10 shrink-0 rounded-xl bg-surface-2 border border-line inline-flex items-center justify-center"
+        onClick={() => onChange(value + 1)}
+        aria-label={`More ${label}`}
+      >
+        <Plus size={16} />
+      </button>
+    </div>
+  );
+}
+
 function LoggedLine({ line, label }: { line: StatLine; label: string }) {
   const { run, pending } = useAction();
+  const passing = line.pass_attempts
+    ? `${line.pass_completions ?? 0}/${line.pass_attempts} passing` +
+      (line.pass_tds ? `, ${line.pass_tds} TD` : "") +
+      (line.ints_thrown ? `, ${line.ints_thrown} INT` : "")
+    : null;
   const summary = [
+    passing,
     line.touchdowns && `${line.touchdowns} TD`,
     line.receptions && `${line.receptions} REC`,
     line.interceptions && `${line.interceptions} INT`,

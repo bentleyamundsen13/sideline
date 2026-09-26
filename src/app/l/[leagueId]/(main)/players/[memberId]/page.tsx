@@ -6,7 +6,7 @@ import { EmptyState, SectionHeader } from "@/components/ui";
 import { TeamTheme } from "@/components/team-theme";
 import { DraftButton } from "@/components/draft-button";
 import { PlayerHero } from "@/components/player-hero";
-import { catchRate } from "@/lib/ovr";
+import { catchRate, completionPct } from "@/lib/ovr";
 import { formatGameDate, formatHeight } from "@/lib/format";
 import { FREE_AGENT_COLOR } from "@/lib/constants";
 import type { StatLine } from "@/lib/types";
@@ -57,6 +57,17 @@ export default async function PlayerPage({ params }: PageProps<"/l/[leagueId]/pl
     { label: "CATCH %", value: cr == null ? "—" : `${cr}` },
     { label: "TD / G", value: totals?.games ? (totals.touchdowns / totals.games).toFixed(1) : "—" },
   ];
+
+  const cmp = completionPct(totals);
+  const passing = totals?.pass_attempts
+    ? [
+        { label: "CMP / ATT", value: `${totals.pass_completions ?? 0}/${totals.pass_attempts}` },
+        { label: "CMP %", value: cmp ?? "—" },
+        { label: "PASS TD", value: totals.pass_tds ?? 0 },
+        { label: "INT THR", value: totals.ints_thrown ?? 0 },
+      ]
+    : null;
+  const showPassingLog = lines.some((l) => l.pass_attempts);
 
   const opponentFor = (line: StatLine) => {
     const g = line.game_id ? gameById.get(line.game_id) : null;
@@ -124,9 +135,23 @@ export default async function PlayerPage({ params }: PageProps<"/l/[leagueId]/pl
               </div>
             ))}
           </div>
+          {passing && (
+            <>
+              <div className="px-3 pt-3 pb-1.5 text-[10px] uppercase tracking-widest text-muted font-semibold border-t border-line">Passing</div>
+              <div className="grid grid-cols-4 gap-px bg-line border-t border-line">
+                {passing.map((s) => (
+                  <div key={s.label} className="bg-surface px-2 py-3 text-center">
+                    <div className="display text-2xl tabular">{s.value}</div>
+                    <div className="text-[10px] uppercase tracking-widest text-muted font-semibold mt-1">{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
         <p className="text-xs text-muted mt-2 px-1">
-          OVR is built from per-game touchdowns, interceptions and receptions, minus drops and fumbles. It settles in after 3 games.
+          OVR is built from per-game touchdowns, interceptions and receptions, minus drops and fumbles. QBs also get
+          credit for TD passes and completion %, and lose points for interceptions thrown. It settles in after 3 games.
         </p>
       </section>
 
@@ -150,6 +175,7 @@ export default async function PlayerPage({ params }: PageProps<"/l/[leagueId]/pl
               <thead>
                 <tr className="text-[10px] uppercase tracking-widest text-muted border-b border-line">
                   <th className="text-left font-semibold py-2.5 pl-4">Game</th>
+                  {showPassingLog && <th className="font-semibold px-2">Pass</th>}
                   <th className="font-semibold px-2">TD</th>
                   <th className="font-semibold px-2">REC</th>
                   <th className="font-semibold px-2">INT</th>
@@ -166,6 +192,22 @@ export default async function PlayerPage({ params }: PageProps<"/l/[leagueId]/pl
                         <div className="font-medium">{opp ? `vs ${opp.name}` : l.game_id ? "League game" : "Pickup"}</div>
                         <div className="text-xs text-muted">{formatGameDate(l.played_on + "T12:00:00")}</div>
                       </td>
+                      {showPassingLog && (
+                        <td className="text-center px-2 whitespace-nowrap">
+                          {l.pass_attempts ? (
+                            <>
+                              <div>
+                                {l.pass_completions ?? 0}/{l.pass_attempts}
+                              </div>
+                              <div className="text-[11px] text-muted">
+                                {l.pass_tds ?? 0} TD · {l.ints_thrown ?? 0} INT
+                              </div>
+                            </>
+                          ) : (
+                            <span className="text-muted">–</span>
+                          )}
+                        </td>
+                      )}
                       <td className="text-center px-2">{l.touchdowns}</td>
                       <td className="text-center px-2">{l.receptions}</td>
                       <td className="text-center px-2">{l.interceptions}</td>
