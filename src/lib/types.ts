@@ -131,6 +131,15 @@ export type Notification = {
   created_at: string;
 };
 
+export type TeamMessage = {
+  id: string;
+  league_id: string;
+  team_id: string;
+  member_id: string | null;
+  body: string;
+  created_at: string;
+};
+
 export type TeamRecord = {
   wins: number;
   losses: number;

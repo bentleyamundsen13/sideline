@@ -6,6 +6,7 @@ import { Avatar, EmptyState, PlayerRow, SectionHeader, StatTile, TeamBadge } fro
 import { TeamTheme } from "@/components/team-theme";
 import { GameCard } from "@/components/game-card";
 import { DraftButton } from "@/components/draft-button";
+import { BackHeader } from "@/components/back-header";
 import { ordinal, recordString } from "@/lib/format";
 import { FREE_AGENT_COLOR, FREE_AGENTS_ID } from "@/lib/constants";
 import type { Team } from "@/lib/types";
@@ -50,6 +51,7 @@ function TeamView({ ctx, team }: { ctx: LeagueContext; team: Team }) {
   return (
     <div className="space-y-7 animate-fade-up">
       <TeamTheme color={team.color} />
+      <BackHeader href={`${base}/teams`} label="All teams" />
 
       <section className="card overflow-hidden relative">
         <div
@@ -181,6 +183,7 @@ function FreeAgents({ ctx }: { ctx: LeagueContext }) {
   return (
     <div className="space-y-6 animate-fade-up">
       <TeamTheme color={FREE_AGENT_COLOR} />
+      <BackHeader href={`${base}/teams`} label="All teams" />
       <section className="flex items-center gap-4 pt-1">
         <TeamBadge team={null} size={64} />
         <div>

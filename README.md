@@ -49,7 +49,12 @@ Computed in [`src/lib/ovr.ts`](src/lib/ovr.ts) from per-game averages:
 
 `volume` ramps from 0 to 1 as a QB approaches 10 attempts per game.
 
-If you set up Supabase before QB stats existed, run
-[`supabase/migrations/002_qb_stats.sql`](supabase/migrations/002_qb_stats.sql) once.
+## Upgrading an existing database
+
+`schema.sql` always has everything. If your Supabase project was set up earlier, run any of
+these you haven't yet (each is safe to run twice):
+
+- [`002_qb_stats.sql`](supabase/migrations/002_qb_stats.sql): QB passing stats
+- [`003_team_chat.sql`](supabase/migrations/003_team_chat.sql): team group chat
 
 Pulled toward 60 until a player has 3 games logged, clamped to 40–99. Tweak the weights there.

@@ -64,8 +64,8 @@ export function InstallGuide() {
     <>
       {showBanner && (
         <div
-          className="fixed inset-x-3 z-[60] animate-fade-up"
-          style={{ bottom: "calc(12px + env(safe-area-inset-bottom))", animationDelay: "1.2s" }}
+          className="install-banner fixed inset-x-3 z-[60] animate-fade-up"
+          style={{ animationDelay: "1.2s" }}
           role="dialog"
           aria-label="Add Sideline to your home screen"
         >

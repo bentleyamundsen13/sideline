@@ -64,6 +64,22 @@ img {
   -webkit-touch-callout: none;
 }
 
+/* Add-to-Home-Screen banner: above the tab bar when there is one, never over the chat box. */
+.install-banner {
+  bottom: calc(12px + env(safe-area-inset-bottom));
+}
+html:has(.bottom-nav) .install-banner {
+  bottom: calc(4rem + 12px + env(safe-area-inset-bottom));
+}
+html:has(.chat-composer) .install-banner {
+  display: none;
+}
+
+/* While typing in chat, the keyboard replaces the tab bar. */
+html[data-keyboard-open] .bottom-nav {
+  display: none;
+}
+
 /* Installed on the home screen: stop the whole page rubber-banding. */
 @media (display-mode: standalone) {
   html,
@@ -90,6 +106,10 @@ body::before {
 }
 @utility pb-safe {
   padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+}
+/* Clears the fixed bottom tab bar (4rem tall) plus breathing room. */
+@utility pb-nav {
+  padding-bottom: calc(6rem + env(safe-area-inset-bottom));
 }
 
 @utility no-scrollbar {
