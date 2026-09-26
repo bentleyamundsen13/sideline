@@ -8,7 +8,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Sideline",
     short_name: "Sideline",
     description: "Your backyard league, run like the pros.",
-    start_url: "/?source=app",
+    start_url: "/open",
     scope: "/",
     display: "standalone",
     orientation: "portrait",
