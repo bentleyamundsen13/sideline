@@ -200,16 +200,27 @@ export default async function LeagueHome({ params }: PageProps<"/l/[leagueId]">)
         </section>
       )}
 
-      {rated.length > 0 && (
-        <section>
-          <SectionHeader
-            title="League leaders"
+      <section>
+        <SectionHeader
+          title="League leaders"
+          action={
+            <Link href={`${base}/leaders`} className="text-xs font-semibold text-muted hover:text-text">
+              All leaders
+            </Link>
+          }
+        />
+        {rated.length === 0 ? (
+          <EmptyState
+            title="No stats yet"
+            body="Leaders show up once players start logging their games."
             action={
-              <Link href={`${base}/leaders`} className="text-xs font-semibold text-muted hover:text-text">
-                All leaders
+              <Link href={`${base}/me/stats`} className="btn btn-secondary btn-sm">
+                Log a game
               </Link>
             }
           />
+        ) : (
+          <>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
             {leaders.map(({ label, l }) => (
               <div key={label} className="card p-3">
@@ -241,8 +252,12 @@ export default async function LeagueHome({ params }: PageProps<"/l/[leagueId]">)
               );
             })}
           </div>
-        </section>
-      )}
+          <Link href={`${base}/leaders`} className="btn btn-secondary w-full mt-3">
+            See all leaders <ChevronRight size={16} />
+          </Link>
+          </>
+        )}
+      </section>
 
       <section>
         <SectionHeader
