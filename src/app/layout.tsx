@@ -33,7 +33,17 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${inter.variable} ${barlow.variable} antialiased`}>
+    // suppressHydrationWarning: the script below adds a class to <html> before React loads.
+    <html lang="en" className={`${inter.variable} ${barlow.variable} antialiased`} suppressHydrationWarning>
+      <head>
+        {/* Mark the installed home-screen app before first paint so the tab bar never jumps. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "if(navigator.standalone===true||matchMedia('(display-mode: standalone)').matches)document.documentElement.classList.add('standalone')",
+          }}
+        />
+      </head>
       <body className="font-sans">
         {children}
         <AppResume />

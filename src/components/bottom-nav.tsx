@@ -49,9 +49,8 @@ export function BottomNav({ base, me, teamId, teamColor, youBadge }: Props) {
   return (
     <nav
       aria-label="Main"
-      // Capped at the iPhone home-indicator inset: right after the keyboard closes,
-      // iOS can briefly report a much larger value and double the bar's height.
-      className="bottom-nav fixed inset-x-0 bottom-0 z-40 bg-bg border-t border-line pb-[min(env(safe-area-inset-bottom),34px)]"
+      // Home-bar padding comes from --nav-pad (none in the installed app; see globals.css).
+      className="bottom-nav fixed inset-x-0 bottom-0 z-40 bg-bg border-t border-line pb-[var(--nav-pad)]"
     >
       <div className="mx-auto max-w-3xl grid grid-cols-4">
         {tabs.map((t) => (

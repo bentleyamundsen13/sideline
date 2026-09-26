@@ -109,7 +109,7 @@ export function TeamChat({
       className="fixed inset-x-0 z-30 bg-bg"
       style={{
         top: "calc(3.5rem + 1px + env(safe-area-inset-top))",
-        bottom: keyboardOpen ? overlap : "calc(4rem + 1px + min(env(safe-area-inset-bottom), 34px))",
+        bottom: keyboardOpen ? overlap : "calc(4rem + 1px + var(--nav-pad))",
       }}
     >
       <div className="mx-auto max-w-3xl h-full flex flex-col">

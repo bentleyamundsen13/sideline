@@ -8,6 +8,9 @@
 }
 
 :root {
+  /* Space under the tab bar for the iPhone home-bar line. The installed app
+     already gets an unusable strip there from iOS, so it skips this. */
+  --nav-pad: min(env(safe-area-inset-bottom), 34px);
   --bg: #0a0c10;
   --surface: #12151c;
   --surface-2: #1a1e28;
@@ -33,6 +36,10 @@
   --color-success: var(--success);
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-barlow), ui-sans-serif, system-ui, sans-serif;
+}
+
+html.standalone {
+  --nav-pad: 0px;
 }
 
 html {
@@ -69,7 +76,7 @@ img {
   bottom: calc(12px + env(safe-area-inset-bottom));
 }
 html:has(.bottom-nav) .install-banner {
-  bottom: calc(4rem + 12px + env(safe-area-inset-bottom));
+  bottom: calc(4rem + 12px + var(--nav-pad));
 }
 html:has(.chat-composer) .install-banner {
   display: none;
@@ -109,7 +116,7 @@ body::before {
 }
 /* Clears the fixed bottom tab bar (4rem tall) plus breathing room. */
 @utility pb-nav {
-  padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+  padding-bottom: calc(6rem + var(--nav-pad));
 }
 
 @utility no-scrollbar {
