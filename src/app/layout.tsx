@@ -4,7 +4,6 @@ import "./globals.css";
 import { AppResume } from "@/components/app-resume";
 import { InstallGuide } from "@/components/install-guide";
 import { ViewportHeal } from "@/components/viewport-heal";
-import { DebugOverlay } from "@/components/debug-overlay";
 import { Splash } from "@/components/splash";
 import { launchStartupImages } from "@/lib/launch-screens";
 
@@ -52,7 +51,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <AppResume />
         <ViewportHeal />
         <InstallGuide />
-        <DebugOverlay />
       </body>
     </html>
   );
