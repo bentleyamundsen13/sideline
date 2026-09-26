@@ -77,6 +77,7 @@ export type PassingStats = {
   pass_tds: number;
   ints_thrown: number;
   forced_fumbles: number;
+  tackles: number;
 };
 
 export type StatTotals = {

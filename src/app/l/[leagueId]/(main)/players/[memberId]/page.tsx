@@ -47,14 +47,16 @@ export default async function PlayerPage({ params }: PageProps<"/l/[leagueId]/pl
   ].filter(([, v]) => v != null && v !== "") as [string, string | number][];
 
   const cr = catchRate(totals);
+  // Three rows of three: scoring, ball security, defense.
   const season = [
     { label: "GP", value: totals?.games ?? 0 },
     { label: "TD", value: totals?.touchdowns ?? 0 },
     { label: "REC", value: totals?.receptions ?? 0 },
-    { label: "INT", value: totals?.interceptions ?? 0 },
+    { label: "CATCH %", value: cr == null ? "—" : `${cr}` },
     { label: "DROPS", value: totals?.drops ?? 0 },
     { label: "FUM", value: totals?.fumbles ?? 0 },
-    { label: "CATCH %", value: cr == null ? "—" : `${cr}` },
+    { label: "TKL", value: totals?.tackles ?? 0 },
+    { label: "INT", value: totals?.interceptions ?? 0 },
     { label: "FF", value: totals?.forced_fumbles ?? 0 },
   ];
 
@@ -127,7 +129,7 @@ export default async function PlayerPage({ params }: PageProps<"/l/[leagueId]/pl
       <section>
         <SectionHeader title="Season stats" />
         <div className="card overflow-hidden">
-          <div className="grid grid-cols-4 gap-px bg-line">
+          <div className="grid grid-cols-3 gap-px bg-line">
             {season.map((s) => (
               <div key={s.label} className="bg-surface px-2 py-3 text-center">
                 <div className="display text-2xl tabular">{s.value}</div>
@@ -150,7 +152,7 @@ export default async function PlayerPage({ params }: PageProps<"/l/[leagueId]/pl
           )}
         </div>
         <p className="text-xs text-muted mt-2 px-1">
-          OVR is built from per-game touchdowns, interceptions, forced fumbles and receptions, minus drops and fumbles. QBs also get
+          OVR is built from per-game touchdowns, receptions, tackles, interceptions and forced fumbles, minus drops and fumbles. QBs also get
           credit for TD passes and completion %, and lose points for interceptions thrown. It settles in after 3 games.
         </p>
       </section>
@@ -178,6 +180,7 @@ export default async function PlayerPage({ params }: PageProps<"/l/[leagueId]/pl
                   {showPassingLog && <th className="font-semibold px-2">Pass</th>}
                   <th className="font-semibold px-2">TD</th>
                   <th className="font-semibold px-2">REC</th>
+                  <th className="font-semibold px-2">TKL</th>
                   <th className="font-semibold px-2">INT</th>
                   <th className="font-semibold px-2">FF</th>
                   <th className="font-semibold px-2">DRP</th>
@@ -211,6 +214,7 @@ export default async function PlayerPage({ params }: PageProps<"/l/[leagueId]/pl
                       )}
                       <td className="text-center px-2">{l.touchdowns}</td>
                       <td className="text-center px-2">{l.receptions}</td>
+                      <td className="text-center px-2">{l.tackles ?? 0}</td>
                       <td className="text-center px-2">{l.interceptions}</td>
                       <td className="text-center px-2">{l.forced_fumbles ?? 0}</td>
                       <td className="text-center px-2">{l.drops}</td>

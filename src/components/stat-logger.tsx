@@ -13,6 +13,7 @@ import { OvrBadge } from "./ui";
 const FIELDS = [
   { key: "touchdowns", label: "Touchdowns", hint: "Ran it in or caught it", good: true },
   { key: "receptions", label: "Receptions", hint: "Catches", good: true },
+  { key: "tackles", label: "Tackles", hint: "Stops (flag pulls count)", good: true },
   { key: "interceptions", label: "Interceptions", hint: "Picks on defense", good: true },
   { key: "forced_fumbles", label: "Forced fumbles", hint: "Knocked the ball loose on defense", good: true },
   { key: "drops", label: "Drops", hint: "Catchable balls dropped", good: false },
@@ -32,6 +33,7 @@ const empty: Record<Key, number> = {
   receptions: 0,
   interceptions: 0,
   forced_fumbles: 0,
+  tackles: 0,
   drops: 0,
   fumbles: 0,
   pass_attempts: 0,
@@ -39,7 +41,7 @@ const empty: Record<Key, number> = {
   pass_tds: 0,
   ints_thrown: 0,
 };
-const MAX: Partial<Record<Key, number>> = { pass_attempts: 200, pass_completions: 200 };
+const MAX: Partial<Record<Key, number>> = { pass_attempts: 200, pass_completions: 200, tackles: 100 };
 
 function localToday() {
   const d = new Date();
@@ -109,6 +111,7 @@ export function StatLogger({
             drops: counts.drops,
             fumbles: counts.fumbles,
             ...(counts.forced_fumbles ? { forced_fumbles: counts.forced_fumbles } : {}),
+            ...(counts.tackles ? { tackles: counts.tackles } : {}),
             ...passing,
           }),
       );
@@ -272,6 +275,7 @@ function LoggedLine({ line, label }: { line: StatLine; label: string }) {
     passing,
     line.touchdowns && `${line.touchdowns} TD`,
     line.receptions && `${line.receptions} REC`,
+    line.tackles && `${line.tackles} TKL`,
     line.interceptions && `${line.interceptions} INT`,
     line.forced_fumbles && `${line.forced_fumbles} FF`,
     line.drops && `${line.drops} DRP`,
