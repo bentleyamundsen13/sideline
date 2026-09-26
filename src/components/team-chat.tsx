@@ -29,8 +29,18 @@ export function TeamChat({
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const keyboard = useKeyboardHeight();
+  const [typing, setTyping] = useState(false);
+  const overlap = useKeyboardOverlap();
+  // On a phone, focusing the box means the keyboard is up. Newer iOS shrinks the
+  // screen instead of sliding the keyboard over it, so overlap alone can read 0.
+  const keyboardOpen = (typing && isTouchDevice()) || overlap > 80;
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Hide the tab bar while the keyboard is up so only the message box rides on it.
+  useEffect(() => {
+    document.documentElement.toggleAttribute("data-keyboard-open", keyboardOpen);
+    return () => document.documentElement.removeAttribute("data-keyboard-open");
+  }, [keyboardOpen]);
   const nearBottom = useRef(true);
   const memberById = new Map(members.map((m) => [m.id, m]));
 
@@ -66,7 +76,7 @@ export function TeamChat({
   useLayoutEffect(() => {
     // Scroll the page itself to the end so the newest message clears the message box and tab bar.
     if (nearBottom.current) window.scrollTo({ top: document.documentElement.scrollHeight });
-  }, [messages.length, keyboard]);
+  }, [messages.length, keyboardOpen, overlap]);
 
   async function send() {
     const body = draft.trim();
@@ -149,7 +159,7 @@ export function TeamChat({
           send();
         }}
         className="chat-composer fixed inset-x-0 z-30 bg-bg border-t border-line"
-        style={{ bottom: keyboard > 0 ? keyboard : "calc(4rem + env(safe-area-inset-bottom))" }}
+        style={{ bottom: keyboardOpen ? overlap : "calc(4rem + env(safe-area-inset-bottom))" }}
       >
         {error && <p className="text-xs text-danger px-4 pt-2 mx-auto max-w-3xl">{error}</p>}
         <div className="mx-auto max-w-3xl flex items-end gap-2 px-3 py-2.5">
@@ -172,6 +182,8 @@ export function TeamChat({
                 send();
               }
             }}
+            onFocus={() => setTyping(true)}
+            onBlur={() => setTyping(false)}
             placeholder="Message your team"
             aria-label="Message your team"
             className="input !rounded-3xl !py-2.5 resize-none max-h-[120px] leading-snug overflow-hidden no-scrollbar"
@@ -180,6 +192,8 @@ export function TeamChat({
             type="submit"
             disabled={!draft.trim() || sending}
             aria-label="Send"
+            // Keep focus (and the keyboard) in the message box when tapping send.
+            onMouseDown={(e) => e.preventDefault()}
             className="w-11 h-11 shrink-0 rounded-full inline-flex items-center justify-center transition-opacity disabled:opacity-30"
             style={{ background: teamColor, color: bubbleText }}
           >
@@ -192,30 +206,29 @@ export function TeamChat({
 }
 
 /**
- * iOS keeps fixed elements pinned behind the on-screen keyboard. Measure how
- * much of the screen the keyboard covers so the message box can sit on top of
- * it, and hide the tab bar while typing.
+ * How much of the page the keyboard covers. Older iOS slides the keyboard over
+ * a full-height page (fixed elements stay pinned behind it), so we lift the
+ * message box by this much. Newer iOS shrinks the page instead, giving 0, and
+ * bottom: 0 already sits right on the keyboard.
  */
-function useKeyboardHeight() {
-  const [height, setHeight] = useState(0);
+function useKeyboardOverlap() {
+  const [overlap, setOverlap] = useState(0);
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
-    const update = () => {
-      const h = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
-      const open = h > 80;
-      setHeight(open ? h : 0);
-      document.documentElement.toggleAttribute("data-keyboard-open", open);
-    };
+    const update = () => setOverlap(Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)));
     vv.addEventListener("resize", update);
     vv.addEventListener("scroll", update);
     return () => {
       vv.removeEventListener("resize", update);
       vv.removeEventListener("scroll", update);
-      document.documentElement.removeAttribute("data-keyboard-open");
     };
   }, []);
-  return height;
+  return overlap;
+}
+
+function isTouchDevice() {
+  return window.matchMedia("(pointer: coarse)").matches;
 }
 
 const dayKey = (iso: string) => new Date(iso).toDateString();
