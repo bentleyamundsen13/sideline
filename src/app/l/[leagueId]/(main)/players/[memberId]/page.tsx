@@ -75,13 +75,21 @@ export default async function PlayerPage({ params }: PageProps<"/l/[leagueId]/pl
           style={{ background: `linear-gradient(160deg, color-mix(in srgb, ${color} 50%, transparent), transparent 70%)` }}
         />
         {player.jersey_number != null && (
-          <div className="absolute right-3 -top-4 display text-[10rem] opacity-10 select-none pointer-events-none tabular" aria-hidden="true">
+          <div className="hidden sm:block absolute right-3 -top-4 display text-[10rem] opacity-10 select-none pointer-events-none tabular" aria-hidden="true">
             {player.jersey_number}
           </div>
         )}
         {/* Phone: photo + OVR on top, name full-width below. Wider: all in one row. */}
-        <div className="relative p-5 pb-4 grid grid-cols-[auto_1fr_auto] items-end gap-x-4 gap-y-3">
+        <div className="relative p-5 pb-4 grid grid-cols-[auto_minmax(0,1fr)_auto] items-end gap-x-4 gap-y-3">
           <Avatar member={player} color={color} size="xl" />
+          {player.jersey_number != null && (
+            <div
+              className="sm:hidden col-start-2 row-start-1 self-center justify-self-center display text-[5.5rem] leading-none opacity-15 select-none pointer-events-none tabular"
+              aria-hidden="true"
+            >
+              {player.jersey_number}
+            </div>
+          )}
           <div className="col-span-3 row-start-2 sm:col-span-1 sm:col-start-2 sm:row-start-1 min-w-0 pb-1">
             {player.nickname && <div className="text-sm text-text/70 italic">&ldquo;{player.nickname}&rdquo;</div>}
             <h1 className="display text-4xl leading-[0.95] text-balance break-words">{player.display_name}</h1>
