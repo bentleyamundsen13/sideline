@@ -159,7 +159,7 @@ export function TeamChat({
           send();
         }}
         className="chat-composer fixed inset-x-0 z-30 bg-bg border-t border-line"
-        style={{ bottom: keyboardOpen ? overlap : "calc(4rem + env(safe-area-inset-bottom))" }}
+        style={{ bottom: keyboardOpen ? overlap : "calc(4rem + min(env(safe-area-inset-bottom), 34px))" }}
       >
         {error && <p className="text-xs text-danger px-4 pt-2 mx-auto max-w-3xl">{error}</p>}
         <div className="mx-auto max-w-3xl flex items-end gap-2 px-3 py-2.5">
@@ -183,7 +183,10 @@ export function TeamChat({
               }
             }}
             onFocus={() => setTyping(true)}
-            onBlur={() => setTyping(false)}
+            onBlur={() => {
+              setTyping(false);
+              settleAfterKeyboard();
+            }}
             placeholder="Message your team"
             aria-label="Message your team"
             className="input !rounded-3xl !py-2.5 resize-none max-h-[120px] leading-snug overflow-hidden no-scrollbar"
@@ -225,6 +228,21 @@ function useKeyboardOverlap() {
     };
   }, []);
   return overlap;
+}
+
+/**
+ * iOS sometimes leaves the page offset after the keyboard closes, so bottom-pinned
+ * bars float with a blank gap under them. Nudging the scroll position once the
+ * keyboard animation finishes makes iOS re-lay everything out.
+ */
+function settleAfterKeyboard() {
+  for (const delay of [60, 350]) {
+    setTimeout(() => {
+      const y = window.scrollY;
+      window.scrollTo(window.scrollX, y + 1);
+      window.scrollTo(window.scrollX, y);
+    }, delay);
+  }
 }
 
 function isTouchDevice() {
