@@ -1,69 +1,134 @@
-import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight, ArrowLeftRight, Bell, ChevronRight, Plus, Trophy, Users, Zap } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
+import { TeamBadge, Wordmark } from "@/components/ui";
+import { SignOutButton } from "@/components/sign-out-button";
+import type { League, Team } from "@/lib/types";
 
-export default function Home() {
+type MyLeagueRow = {
+  id: string;
+  onboarded: boolean;
+  is_commissioner: boolean;
+  leagues: Pick<League, "id" | "name" | "sport" | "season"> | null;
+  teams: Pick<Team, "name" | "abbr" | "color"> | null;
+};
+
+export default async function Home() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return <Landing />;
+
+  const { data } = await supabase
+    .from("members")
+    .select("id, onboarded, is_commissioner, leagues(id, name, sport, season), teams!members_team_id_fkey(name, abbr, color)")
+    .eq("user_id", user.id)
+    .order("joined_at", { ascending: false });
+  const rows = (data ?? []) as unknown as MyLeagueRow[];
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="mx-auto max-w-xl px-4 pt-6 pb-16">
+      <header className="flex items-center justify-between">
+        <Wordmark />
+        <SignOutButton />
+      </header>
+
+      <section className="mt-10 animate-fade-up">
+        <h1 className="display text-4xl">Your leagues</h1>
+        <p className="text-muted mt-1 text-sm">{user.email}</p>
+
+        <div className="grid grid-cols-2 gap-3 mt-6">
+          <Link href="/join" className="card p-4 hover:bg-surface-2 transition-colors">
+            <Users className="text-brand" size={22} />
+            <div className="display text-xl mt-3">Join League</div>
+            <div className="text-xs text-muted mt-1">Got a code from a friend?</div>
+          </Link>
+          <Link href="/leagues/new" className="card p-4 hover:bg-surface-2 transition-colors">
+            <Plus className="text-brand" size={22} />
+            <div className="display text-xl mt-3">Create League</div>
+            <div className="text-xs text-muted mt-1">Be the commissioner.</div>
+          </Link>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="mt-8 space-y-2">
+          {rows.length === 0 && (
+            <p className="text-sm text-muted text-center py-8">You&apos;re not in any leagues yet. Join one or start your own.</p>
+          )}
+          {rows.map((row) =>
+            row.leagues ? (
+              <Link
+                key={row.id}
+                href={`/l/${row.leagues.id}`}
+                className="card flex items-center gap-3 p-3 hover:bg-surface-2 transition-colors"
+              >
+                <TeamBadge team={row.teams} size={44} />
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold truncate">{row.leagues.name}</div>
+                  <div className="text-xs text-muted truncate">
+                    {[row.leagues.sport, row.leagues.season].filter(Boolean).join(" · ")}
+                    {" · "}
+                    {!row.onboarded ? "Finish your profile" : row.teams ? row.teams.name : "Free Agent"}
+                    {row.is_commissioner && " · Commissioner"}
+                  </div>
+                </div>
+                <ChevronRight size={18} className="text-muted" />
+              </Link>
+            ) : null,
+          )}
         </div>
-      </main>
-    </div>
+      </section>
+    </main>
+  );
+}
+
+function Landing() {
+  const features = [
+    { icon: Trophy, title: "Standings & schedule", body: "Records, streaks, scores and upcoming games." },
+    { icon: Zap, title: "Player ratings", body: "Log your stats after each game and earn your OVR." },
+    { icon: ArrowLeftRight, title: "Draft & trade", body: "Captains draft free agents and work out trades." },
+    { icon: Bell, title: "Live alerts", body: "Get pinged the second you're drafted or traded." },
+  ];
+  return (
+    <main className="mx-auto max-w-xl px-4 pt-6 pb-16">
+      <header className="flex items-center justify-between">
+        <Wordmark />
+        <Link href="/login" className="btn btn-ghost btn-sm">
+          Sign in
+        </Link>
+      </header>
+
+      <section className="mt-16 animate-fade-up">
+        <p className="chip">For backyard leagues</p>
+        <h1 className="display text-6xl mt-4 leading-[0.9]">
+          Your league.
+          <br />
+          <span className="text-brand">Run like the pros.</span>
+        </h1>
+        <p className="text-muted mt-5 max-w-md">
+          Set up teams, draft your friends, talk trades, and track every touchdown. Everything your league needs,
+          nothing it doesn&apos;t.
+        </p>
+        <div className="flex gap-3 mt-8">
+          <Link href="/signup" className="btn btn-primary">
+            Get started <ArrowRight size={16} />
+          </Link>
+          <Link href="/login" className="btn btn-secondary">
+            I have an account
+          </Link>
+        </div>
+      </section>
+
+      <section className="grid grid-cols-2 gap-3 mt-14">
+        {features.map(({ icon: Icon, title, body }) => (
+          <div key={title} className="card p-4">
+            <Icon size={20} className="text-brand" />
+            <div className="font-semibold mt-3 text-sm">{title}</div>
+            <div className="text-xs text-muted mt-1">{body}</div>
+          </div>
+        ))}
+      </section>
+    </main>
   );
 }

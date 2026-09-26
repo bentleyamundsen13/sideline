@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sideline
 
-## Getting Started
+Run your backyard league like the pros. Accounts, leagues with invite codes, player profiles,
+teams with colors, captains, a draft, trades with counter offers, live notifications,
+self-reported stats with an OVR rating, schedule, standings and a news feed.
 
-First, run the development server:
+Next.js 16 · Tailwind 4 · Supabase (Postgres, Auth, Storage, Realtime) · deploys to Vercel.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Setup
+
+1. **Create a Supabase project** at [supabase.com](https://supabase.com) (free tier is plenty).
+2. **Create the database:** Dashboard → SQL Editor → New query → paste all of
+   [`supabase/schema.sql`](supabase/schema.sql) → Run.
+3. **(Recommended) Turn off email confirmation** so friends can sign up instantly:
+   Authentication → Sign In / Providers → Email → disable "Confirm email".
+   If you leave it on, set Authentication → URL Configuration → Site URL to your Vercel URL
+   and add `https://<your-app>.vercel.app/auth/callback` to Redirect URLs.
+4. **Env vars:** copy `.env.example` to `.env.local` and fill in the Project URL and
+   publishable (or anon) key from Project Settings → API.
+5. `npm install` then `npm run dev` and open http://localhost:3000.
+
+## Deploy to Vercel
+
+Push to GitHub, import the repo in Vercel, add the same two env vars, deploy.
+
+## How it works
+
+| Who | Can do |
+| --- | --- |
+| Anyone signed in | Create a league, or join one with its 6-character code |
+| Every player | Build a profile, log their own game stats, view any team or player |
+| Commissioner (league creator) | Create/edit/delete teams, name captains, move players, schedule games and enter scores, post news |
+| Captains | Draft free agents, propose trades, accept / decline / counter offers |
+
+- New players land on **Free Agents** until drafted or assigned.
+- Permission rules live in the database (row-level security + Postgres functions in
+  `schema.sql`), so they hold even if someone pokes the API directly.
+- Trades, drafts, captain picks and final scores automatically post to league news and send
+  notifications. The bell updates live via Supabase Realtime.
+
+### OVR
+
+Computed in [`src/lib/ovr.ts`](src/lib/ovr.ts) from per-game averages:
+
+```
+60 + 8·TD + 12·INT + 2·REC − 6·FUM − 4·DROPS   (per game)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Pulled toward 60 until a player has 3 games logged, clamped to 40–99. Tweak the weights there.
