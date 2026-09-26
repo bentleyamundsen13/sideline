@@ -2,8 +2,18 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { setDebugOverlay, useDebugOverlay } from "@/components/debug-overlay";
 
 type Reading = Record<string, string | number | boolean>;
+
+function OverlayToggle() {
+  const on = useDebugOverlay();
+  return (
+    <button className={`btn w-full ${on ? "btn-danger" : "btn-accent"}`} onClick={() => setDebugOverlay(!on)}>
+      {on ? "Turn measurements OFF" : "Turn measurements ON"}
+    </button>
+  );
+}
 
 /** Live screen measurements, to diagnose where iOS thinks the bottom of the screen is. */
 export function ScreenCheck() {
@@ -62,6 +72,19 @@ export function ScreenCheck() {
         ‹ Back
       </Link>
       <h1 className="display text-3xl mt-3">Screen check</h1>
+
+      <div className="card p-4 mt-4 space-y-3 !border-brand/50">
+        <p className="font-semibold">Measure the chat screen</p>
+        <ol className="text-sm text-muted list-decimal pl-5 space-y-1">
+          <li>Tap the button below to turn on the measurements.</li>
+          <li>Go back and open the Chat tab. Screenshot it.</li>
+          <li>Tap the message box, close the keyboard, screenshot again.</li>
+          <li>Come back here and turn it off.</li>
+        </ol>
+        <OverlayToggle />
+      </div>
+
+      <p className="section-title mt-8">This page</p>
       <ol className="text-sm text-muted mt-2 list-decimal pl-5 space-y-1">
         <li>Open this inside the home-screen app.</li>
         <li>Screenshot it.</li>
