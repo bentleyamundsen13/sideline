@@ -16,7 +16,7 @@ export const getLeagueContext = cache(async (leagueId: string) => {
   const user = await getAuthUser(supabase);
   if (!user) redirect("/login");
 
-  const [leagueRes, teamsRes, membersRes, statsRes, gamesRes, pendingRes] = await Promise.all([
+  const [leagueRes, teamsRes, membersRes, statsRes, gamesRes, pendingRes, rsvpRes] = await Promise.all([
     supabase.from("leagues").select("*").eq("id", leagueId).maybeSingle(),
     supabase.from("teams").select("*").eq("league_id", leagueId).order("created_at"),
     supabase.from("members").select("*").eq("league_id", leagueId).order("display_name"),
@@ -24,6 +24,7 @@ export const getLeagueContext = cache(async (leagueId: string) => {
     supabase.from("games").select("*").eq("league_id", leagueId).order("scheduled_at"),
     // Only trades you're allowed to see come back (RLS): yours as a captain, or all as commissioner.
     supabase.from("trades").select("id, receiver_team_id").eq("league_id", leagueId).eq("status", "pending"),
+    supabase.from("game_rsvps").select("game_id, member_id, status").eq("league_id", leagueId),
   ]);
 
   // Not in this league (RLS hides it) or it doesn't exist.
@@ -45,6 +46,12 @@ export const getLeagueContext = cache(async (leagueId: string) => {
   const ranked = standings(teams, records);
   const captainTeam = teams.find((t) => t.captain_id === me.id) ?? null;
   const captainIds = new Set(teams.map((t) => t.captain_id).filter(Boolean) as string[]);
+  // game id -> member id -> "in" | "out"
+  const rsvps = new Map<string, Map<string, "in" | "out">>();
+  for (const r of (rsvpRes.data ?? []) as { game_id: string; member_id: string; status: "in" | "out" }[]) {
+    if (!rsvps.has(r.game_id)) rsvps.set(r.game_id, new Map());
+    rsvps.get(r.game_id)!.set(r.member_id, r.status);
+  }
   const incomingTrades = captainTeam
     ? ((pendingRes.data ?? []) as { receiver_team_id: string }[]).filter((t) => t.receiver_team_id === captainTeam.id).length
     : 0;
@@ -66,12 +73,34 @@ export const getLeagueContext = cache(async (leagueId: string) => {
     captainTeam,
     captainIds,
     incomingTrades,
+    rsvps,
     myTeam: me.team_id ? (teamById.get(me.team_id) ?? null) : null,
     isCommish: me.is_commissioner,
   };
 });
 
 export type LeagueContext = Awaited<ReturnType<typeof getLeagueContext>>;
+
+export type RsvpInfo = { gameId: string; leagueId: string; memberId: string; count: { in: number; out: number }; mine: "in" | "out" | null; canRsvp: boolean };
+
+/** In/out counts for a game plus your own answer. Only players on the two teams can answer. */
+export function rsvpFor(ctx: LeagueContext, game: Game): RsvpInfo {
+  const answers = ctx.rsvps.get(game.id) ?? new Map();
+  let yes = 0;
+  let no = 0;
+  for (const s of answers.values()) {
+    if (s === "in") yes++;
+    else no++;
+  }
+  return {
+    gameId: game.id,
+    leagueId: ctx.league.id,
+    memberId: ctx.me.id,
+    count: { in: yes, out: no },
+    mine: answers.get(ctx.me.id) ?? null,
+    canRsvp: ctx.me.team_id === game.home_team_id || ctx.me.team_id === game.away_team_id,
+  };
+}
 
 /** Onboarded players on a team (null = free agents), captain first then by OVR. */
 export function rosterOf(ctx: LeagueContext, teamId: string | null) {

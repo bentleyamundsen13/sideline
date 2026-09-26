@@ -2,7 +2,9 @@ import Link from "next/link";
 import { MapPin } from "lucide-react";
 import { formatGameDate, formatGameTime } from "@/lib/format";
 import type { Game, Team } from "@/lib/types";
+import type { RsvpInfo } from "@/lib/league";
 import { TeamBadge } from "./ui";
+import { RsvpBar } from "./rsvp-bar";
 
 export function GameCard({
   game,
@@ -10,12 +12,14 @@ export function GameCard({
   away,
   leagueId,
   highlightTeamId,
+  rsvp,
 }: {
   game: Game;
   home: Team | undefined;
   away: Team | undefined;
   leagueId: string;
   highlightTeamId?: string | null;
+  rsvp?: RsvpInfo;
 }) {
   const final = game.status === "final";
   const homeWon = final && game.home_score! > game.away_score!;
@@ -55,6 +59,7 @@ export function GameCard({
           <MapPin size={12} /> {game.location}
         </div>
       )}
+      {rsvp && !final && <RsvpBar info={rsvp} />}
     </div>
   );
 }

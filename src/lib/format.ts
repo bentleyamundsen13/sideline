@@ -59,6 +59,10 @@ export function recordString(r: { wins: number; losses: number; ties: number }) 
 }
 
 export function errorMessage(e: unknown) {
-  if (e && typeof e === "object" && "message" in e) return String((e as { message: unknown }).message);
-  return "Something went wrong";
+  const msg = e && typeof e === "object" && "message" in e ? String((e as { message: unknown }).message) : "";
+  // Chrome / Safari / Firefox wording for "no connection".
+  if (/failed to fetch|load failed|networkerror|network request failed/i.test(msg)) {
+    return "Couldn't connect. Check your signal and try again.";
+  }
+  return msg || "Something went wrong";
 }

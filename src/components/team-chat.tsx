@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ArrowUp } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { markChatSeen } from "@/lib/chat-seen";
+import { pushChat } from "@/lib/push-client";
 import { errorMessage, textOn } from "@/lib/format";
 import type { TeamMessage } from "@/lib/types";
 import { Avatar } from "./ui";
@@ -85,6 +86,7 @@ export function TeamChat({
         .select()
         .single();
       if (error) throw error;
+      pushChat(data.id);
       nearBottom.current = true;
       setMessages((prev) => (prev.some((x) => x.id === data.id) ? prev : [...prev, data as TeamMessage]));
       setDraft("");

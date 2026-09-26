@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeftRight, Crown, Settings } from "lucide-react";
-import { getLeagueContext, rosterOf, type LeagueContext } from "@/lib/league";
+import { getLeagueContext, rosterOf, rsvpFor, type LeagueContext } from "@/lib/league";
 import { Avatar, EmptyState, PlayerRow, SectionHeader, StatTile, TeamBadge } from "@/components/ui";
 import { TeamTheme } from "@/components/team-theme";
 import { GameCard } from "@/components/game-card";
@@ -113,7 +113,7 @@ function TeamView({ ctx, team }: { ctx: LeagueContext; team: Team }) {
           {nextGame && (
             <div>
               <SectionHeader title="Next game" />
-              <GameCard game={nextGame} home={teamById.get(nextGame.home_team_id)} away={teamById.get(nextGame.away_team_id)} leagueId={league.id} />
+              <GameCard game={nextGame} home={teamById.get(nextGame.home_team_id)} away={teamById.get(nextGame.away_team_id)} leagueId={league.id} rsvp={rsvpFor(ctx, nextGame)} />
             </div>
           )}
           {lastGame && (

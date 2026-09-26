@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { ArrowLeftRight, ChevronRight, MapPin, Settings, UserPlus, Zap } from "lucide-react";
-import { getLeagueContext } from "@/lib/league";
+import { getLeagueContext, rsvpFor } from "@/lib/league";
 import { GameCard } from "@/components/game-card";
 import { NewsFeed } from "@/components/news-feed";
 import { Avatar, EmptyState, OvrBadge, SectionHeader, TeamBadge } from "@/components/ui";
 import { TeamTheme } from "@/components/team-theme";
+import { PushToggle } from "@/components/push-toggle";
 import { recordString } from "@/lib/format";
 import { FREE_AGENTS_ID } from "@/lib/constants";
 import { requestTime } from "@/lib/time";
@@ -95,6 +96,8 @@ export default async function LeagueHome({ params }: PageProps<"/l/[leagueId]">)
         </div>
       </section>
 
+      <PushToggle prompt />
+
       {callouts.length > 0 && (
         <section className="space-y-2">
           {callouts.map(({ href, icon: Icon, title, body, strong }) => (
@@ -135,7 +138,7 @@ export default async function LeagueHome({ params }: PageProps<"/l/[leagueId]">)
         ) : (
           <div className="grid sm:grid-cols-2 gap-3">
             {upcoming.map((g) => (
-              <GameCard key={g.id} game={g} home={teamById.get(g.home_team_id)} away={teamById.get(g.away_team_id)} leagueId={leagueId} highlightTeamId={me.team_id} />
+              <GameCard key={g.id} game={g} home={teamById.get(g.home_team_id)} away={teamById.get(g.away_team_id)} leagueId={leagueId} highlightTeamId={me.team_id} rsvp={rsvpFor(ctx, g)} />
             ))}
           </div>
         )}

@@ -2,7 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { SUPABASE_CONFIGURED, SUPABASE_KEY, SUPABASE_URL } from "@/lib/supabase/env";
 
-const PUBLIC_PATHS = ["/", "/login", "/signup", "/auth"];
+// /api routes check their own auth (the daily cron job has no login cookie).
+const PUBLIC_PATHS = ["/", "/login", "/signup", "/auth", "/api"];
 
 export async function proxy(request: NextRequest) {
   if (!SUPABASE_CONFIGURED) {
@@ -48,5 +49,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon|apple-icon|app-icons|launch|open|manifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon|apple-icon|app-icons|launch|open|manifest|sw\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)"],
 };

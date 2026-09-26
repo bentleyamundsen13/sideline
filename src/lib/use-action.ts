@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
 import { errorMessage } from "./format";
+import { flushPush } from "./push-client";
 
 /**
  * Runs an async mutation, tracks pending/error state, and refreshes server data
@@ -21,6 +22,8 @@ export function useAction() {
       try {
         const result = await fn();
         if (opts.refresh !== false) startTransition(() => router.refresh());
+        // Drafts, trades, captain picks etc. create notifications; send them to phones now.
+        flushPush();
         return result;
       } catch (e) {
         setError(errorMessage(e));

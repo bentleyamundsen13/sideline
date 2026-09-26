@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getLeagueContext } from "@/lib/league";
+import { getLeagueContext, rsvpFor } from "@/lib/league";
 import { BackHeader } from "@/components/back-header";
 import { GameCard } from "@/components/game-card";
 import { TeamTheme } from "@/components/team-theme";
@@ -22,7 +22,8 @@ function byWeek(games: Game[]) {
 
 export default async function SchedulePage({ params }: PageProps<"/l/[leagueId]/schedule">) {
   const { leagueId } = await params;
-  const { games, teamById, me } = await getLeagueContext(leagueId);
+  const ctx = await getLeagueContext(leagueId);
+  const { games, teamById, me } = ctx;
   const base = `/l/${leagueId}`;
 
   const upcoming = games.filter((g) => g.status === "scheduled"); // soonest first
@@ -34,7 +35,7 @@ export default async function SchedulePage({ params }: PageProps<"/l/[leagueId]/
         <div className="text-[11px] font-semibold uppercase tracking-widest text-muted px-1 pt-1">{label}</div>
         <div className="grid sm:grid-cols-2 gap-3">
           {gs.map((g) => (
-            <GameCard key={g.id} game={g} home={teamById.get(g.home_team_id)} away={teamById.get(g.away_team_id)} leagueId={leagueId} highlightTeamId={me.team_id} />
+            <GameCard key={g.id} game={g} home={teamById.get(g.home_team_id)} away={teamById.get(g.away_team_id)} leagueId={leagueId} highlightTeamId={me.team_id} rsvp={rsvpFor(ctx, g)} />
           ))}
         </div>
       </div>

@@ -56,5 +56,16 @@ these you haven't yet (each is safe to run twice):
 
 - [`002_qb_stats.sql`](supabase/migrations/002_qb_stats.sql): QB passing stats
 - [`003_team_chat.sql`](supabase/migrations/003_team_chat.sql): team group chat
+- [`004_rsvp_and_push.sql`](supabase/migrations/004_rsvp_and_push.sql): game RSVPs and push notifications
+
+## Push notifications
+
+Add these to Vercel (Settings → Environment Variables), then redeploy:
+
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY`: generate with `npx web-push generate-vapid-keys`
+- `CRON_SECRET`: any long random string (protects the daily reminder job in `vercel.json`)
+- `SUPABASE_SERVICE_ROLE_KEY`: already there if you used the Vercel Supabase integration
+
+On iPhone, notifications only work in the home-screen app (iOS 16.4+). Players turn them on from the You tab.
 
 Pulled toward 60 until a player has 3 games logged, clamped to 40–99. Tweak the weights there.

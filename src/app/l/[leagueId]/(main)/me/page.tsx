@@ -5,6 +5,7 @@ import { TeamTheme } from "@/components/team-theme";
 import { Avatar, OvrBadge, PositionLine } from "@/components/ui";
 import { LeagueCodeCard } from "@/components/league-code-card";
 import { InstallMenuButton } from "@/components/install-menu-button";
+import { PushToggle } from "@/components/push-toggle";
 import { SignOutButton } from "@/components/sign-out-button";
 import { FREE_AGENT_COLOR } from "@/lib/constants";
 
@@ -68,6 +69,7 @@ export default async function YouPage({ params }: PageProps<"/l/[leagueId]/me">)
       {games === 0 && <p className="text-xs text-muted text-center -mt-2">Log a game to get your OVR.</p>}
 
       <InstallMenuButton />
+      <PushToggle />
 
       <div className="card divide-y divide-line overflow-hidden">
         {rows.map(({ href, icon: Icon, label, sub, badge }) => (

@@ -19,6 +19,10 @@ function findEnv(suffixes: string[]) {
 }
 
 const nextConfig: NextConfig = {
+  // Phones must always fetch the latest service worker, never a cached copy.
+  async headers() {
+    return [{ source: "/sw.js", headers: [{ key: "Cache-Control", value: "no-cache, no-store, must-revalidate" }] }];
+  },
   env: {
     SIDELINE_SUPABASE_URL: findEnv(["SUPABASE_URL"]),
     SIDELINE_SUPABASE_KEY: findEnv(["SUPABASE_PUBLISHABLE_KEY", "SUPABASE_ANON_KEY"]),
