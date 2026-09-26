@@ -91,6 +91,10 @@ export default async function YouPage({ params }: PageProps<"/l/[leagueId]/me">)
       <LeagueCodeCard code={league.code} leagueName={league.name} />
 
       <SignOutButton className="btn btn-ghost w-full" />
+      {/* Temporary: diagnosing an iOS home-screen layout bug. */}
+      <Link href="/screen-check" className="block text-center text-xs text-muted/60 py-2">
+        Screen check
+      </Link>
     </div>
   );
 }

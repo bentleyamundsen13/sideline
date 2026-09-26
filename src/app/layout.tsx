@@ -3,6 +3,7 @@ import { Barlow_Condensed, Inter } from "next/font/google";
 import "./globals.css";
 import { AppResume } from "@/components/app-resume";
 import { InstallGuide } from "@/components/install-guide";
+import { ViewportHeal } from "@/components/viewport-heal";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 const barlow = Barlow_Condensed({
@@ -35,6 +36,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="font-sans">
         {children}
         <AppResume />
+        <ViewportHeal />
         <InstallGuide />
       </body>
     </html>
