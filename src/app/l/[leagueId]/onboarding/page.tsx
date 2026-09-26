@@ -11,7 +11,7 @@ export default async function OnboardingPage({ params }: PageProps<"/l/[leagueId
   if (me.onboarded) redirect(`/l/${leagueId}`);
 
   return (
-    <main className="mx-auto max-w-md px-4 pt-6 pb-16">
+    <main className="mx-auto max-w-md px-4 pt-safe pb-16">
       <Wordmark />
       <div className="mt-8 mb-6 animate-fade-up">
         <p className="chip">{me.is_commissioner ? "Commissioner" : "New signing"}</p>

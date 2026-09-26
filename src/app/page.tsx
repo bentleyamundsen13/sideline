@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { ArrowRight, ArrowLeftRight, Bell, ChevronRight, Plus, Trophy, Users, Zap } from "lucide-react";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { LAST_LEAGUE_COOKIE } from "@/lib/constants";
 import { TeamBadge, Wordmark } from "@/components/ui";
 import { SignOutButton } from "@/components/sign-out-button";
 import type { League, Team } from "@/lib/types";
@@ -13,7 +16,7 @@ type MyLeagueRow = {
   teams: Pick<Team, "name" | "abbr" | "color"> | null;
 };
 
-export default async function Home() {
+export default async function Home({ searchParams }: PageProps<"/">) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -28,8 +31,16 @@ export default async function Home() {
     .order("joined_at", { ascending: false });
   const rows = (data ?? []) as unknown as MyLeagueRow[];
 
+  // Opening the home-screen app: jump straight into your last league (or your only one).
+  if ((await searchParams).source === "app") {
+    const leagueIds = rows.map((r) => r.leagues?.id).filter(Boolean) as string[];
+    const last = (await cookies()).get(LAST_LEAGUE_COOKIE)?.value;
+    const target = last && leagueIds.includes(last) ? last : leagueIds.length === 1 ? leagueIds[0] : null;
+    if (target) redirect(`/l/${target}`);
+  }
+
   return (
-    <main className="mx-auto max-w-xl px-4 pt-6 pb-16">
+    <main className="mx-auto max-w-xl px-4 pt-safe pb-16">
       <header className="flex items-center justify-between">
         <Wordmark />
         <SignOutButton />
@@ -91,7 +102,7 @@ function Landing() {
     { icon: Bell, title: "Live alerts", body: "Get pinged the second you're drafted or traded." },
   ];
   return (
-    <main className="mx-auto max-w-xl px-4 pt-6 pb-16">
+    <main className="mx-auto max-w-xl px-4 pt-safe pb-16">
       <header className="flex items-center justify-between">
         <Wordmark />
         <Link href="/login" className="btn btn-ghost btn-sm">

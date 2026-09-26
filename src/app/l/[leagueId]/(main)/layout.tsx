@@ -5,6 +5,7 @@ import { MenuDrawer } from "@/components/menu-drawer";
 import { NotificationBell } from "@/components/notification-bell";
 import { TeamBar } from "@/components/team-bar";
 import { Logo } from "@/components/ui";
+import { RememberLeague } from "@/components/remember-league";
 
 export default async function LeagueLayout({ children, params }: LayoutProps<"/l/[leagueId]">) {
   const { leagueId } = await params;
@@ -26,7 +27,9 @@ export default async function LeagueLayout({ children, params }: LayoutProps<"/l
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-bg/80 backdrop-blur-xl border-b border-line pt-[env(safe-area-inset-top)]">
+      <RememberLeague leagueId={league.id} />
+      {/* Solid (not frosted) so iOS doesn't show a half-blurred bar under the clock. */}
+      <header className="sticky top-0 z-40 bg-bg border-b border-line pt-[env(safe-area-inset-top)]">
         <div className="mx-auto max-w-3xl px-2 h-14 flex items-center gap-1">
           <MenuDrawer
             leagueId={league.id}
@@ -52,7 +55,7 @@ export default async function LeagueLayout({ children, params }: LayoutProps<"/l
           freeAgentCount={freeAgentCount}
         />
       </header>
-      <main className="mx-auto max-w-3xl px-4 pt-5 pb-24">{children}</main>
+      <main className="mx-auto max-w-3xl px-4 pt-5 pb-safe">{children}</main>
     </>
   );
 }

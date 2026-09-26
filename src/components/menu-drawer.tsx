@@ -16,9 +16,11 @@ import {
   Pencil,
   Settings,
   Share2,
+  Smartphone,
   User,
   X,
 } from "lucide-react";
+import { OPEN_INSTALL_GUIDE, useCanInstall } from "./install-guide";
 import { Avatar, OvrBadge } from "./ui";
 import { SignOutButton } from "./sign-out-button";
 
@@ -44,6 +46,7 @@ export function MenuDrawer(p: Props) {
     () => true,
     () => false,
   );
+  const canInstall = useCanInstall();
   const base = `/l/${p.leagueId}`;
 
   useEffect(() => {
@@ -163,7 +166,18 @@ export function MenuDrawer(p: Props) {
           })}
         </nav>
 
-        <div className="p-3 border-t border-line space-y-3">
+        <div className="p-3 border-t border-line space-y-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+          {canInstall && (
+            <button
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold bg-brand text-bg"
+              onClick={() => {
+                setOpen(false);
+                window.dispatchEvent(new Event(OPEN_INSTALL_GUIDE));
+              }}
+            >
+              <Smartphone size={18} /> Add to Home Screen
+            </button>
+          )}
           <div className="rounded-xl bg-bg border border-line p-3">
             <div className="text-[10px] uppercase tracking-widest text-muted font-semibold">League code</div>
             <div className="flex items-center justify-between mt-1">

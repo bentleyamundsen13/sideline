@@ -20,5 +20,7 @@ export const TEAM_COLORS = [
   "#475569", // slate
 ] as const;
 
+export const LAST_LEAGUE_COOKIE = "sideline_last_league";
+
 export const FREE_AGENTS_ID = "free-agents";
 export const FREE_AGENT_COLOR = "#64748b";

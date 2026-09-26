@@ -40,7 +40,7 @@ export default function NewLeaguePage() {
   }
 
   return (
-    <main className="mx-auto max-w-md px-4 pt-6 pb-16">
+    <main className="mx-auto max-w-md px-4 pt-safe pb-16">
       <BackHeader href="/" />
       <form onSubmit={onSubmit} className="mt-8 space-y-5 animate-fade-up">
         <div>

@@ -40,12 +40,36 @@ html {
   background: var(--bg);
   transition: --accent 600ms ease;
   -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  /* No double-tap-to-zoom delay on buttons. */
+  touch-action: manipulation;
 }
 
 body {
   background: var(--bg);
   color: var(--text);
   min-height: 100dvh;
+}
+
+/* Feel like an app, not a web page: no text-selection or link-preview popups
+   when you press and hold buttons, links and nav. Text in inputs still works. */
+a,
+button,
+nav,
+header,
+[role="button"],
+img {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Installed on the home screen: stop the whole page rubber-banding. */
+@media (display-mode: standalone) {
+  html,
+  body {
+    overscroll-behavior-y: none;
+  }
 }
 
 /* Subtle glow in the current accent (team color on team pages). */
@@ -58,6 +82,14 @@ body::before {
   background:
     radial-gradient(900px 420px at 50% -140px, color-mix(in srgb, var(--accent) 24%, transparent), transparent 70%),
     linear-gradient(180deg, color-mix(in srgb, var(--accent) 7%, transparent), transparent 480px);
+}
+
+/* Top padding that clears the iPhone clock/notch when installed as an app. */
+@utility pt-safe {
+  padding-top: calc(1.5rem + env(safe-area-inset-top));
+}
+@utility pb-safe {
+  padding-bottom: calc(4rem + env(safe-area-inset-bottom));
 }
 
 @utility no-scrollbar {

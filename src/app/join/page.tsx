@@ -22,7 +22,7 @@ export default function JoinPage() {
   }
 
   return (
-    <main className="mx-auto max-w-sm px-4 pt-6 pb-16">
+    <main className="mx-auto max-w-sm px-4 pt-safe pb-16">
       <BackHeader href="/" />
       <form onSubmit={onSubmit} className="mt-10 space-y-6 animate-fade-up">
         <div>

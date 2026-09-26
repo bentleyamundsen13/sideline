@@ -102,7 +102,7 @@ export function NotificationBell({ userId, leagueId }: { userId: string; leagueI
       </button>
 
       {open && (
-        <div className="fixed left-2 right-2 top-14 sm:absolute sm:left-auto sm:right-0 sm:top-12 sm:w-96 card shadow-2xl shadow-black/50 overflow-hidden z-50 animate-fade-up">
+        <div className="fixed left-2 right-2 top-[calc(3.5rem+env(safe-area-inset-top))] sm:absolute sm:left-auto sm:right-0 sm:top-12 sm:w-96 card shadow-2xl shadow-black/50 overflow-hidden z-50 animate-fade-up">
           <div className="flex items-center justify-between px-4 py-3 border-b border-line">
             <span className="display text-lg">Notifications</span>
             <div className="flex items-center gap-1">
