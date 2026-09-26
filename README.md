@@ -59,6 +59,7 @@ these you haven't yet (each is safe to run twice):
 - [`004_rsvp_and_push.sql`](supabase/migrations/004_rsvp_and_push.sql): game RSVPs and push notifications
 - [`005_forced_fumbles.sql`](supabase/migrations/005_forced_fumbles.sql): forced fumbles stat
 - [`006_tackles.sql`](supabase/migrations/006_tackles.sql): tackles stat
+- [`007_player_of_the_game.sql`](supabase/migrations/007_player_of_the_game.sql): Player of the Game announcements
 
 ## Push notifications
 

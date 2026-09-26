@@ -845,3 +845,6 @@ alter table public.games add column if not exists stats_reminded_at timestamptz;
 alter table public.games add column if not exists rsvp_reminded_at timestamptz;
 
 notify pgrst, 'reload schema';
+
+-- Player of the Game is announced once per game.
+alter table public.games add column if not exists potg_posted_at timestamptz;

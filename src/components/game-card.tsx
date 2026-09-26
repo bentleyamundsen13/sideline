@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { MapPin } from "lucide-react";
+import { ChevronRight, MapPin } from "lucide-react";
 import { formatGameDate, formatGameTime } from "@/lib/format";
 import type { Game, Team } from "@/lib/types";
 import type { RsvpInfo } from "@/lib/league";
 import { TeamBadge } from "./ui";
 import { RsvpBar } from "./rsvp-bar";
 
+/** A game at a glance. Tapping it opens the game page (box score, who's playing). */
 export function GameCard({
   game,
   home,
@@ -28,27 +29,30 @@ export function GameCard({
 
   const row = (team: Team | undefined, score: number | null, won: boolean, lost: boolean) => (
     <div className="flex items-center gap-3">
-      {team ? (
-        <Link href={`/l/${leagueId}/teams/${team.id}`} className="flex items-center gap-3 flex-1 min-w-0 hover:underline underline-offset-2">
-          <TeamBadge team={team} size={30} />
-          <span className={`truncate ${lost ? "text-muted" : "font-semibold"}`}>{team.name}</span>
-        </Link>
-      ) : (
-        <span className="flex-1 text-muted">TBD</span>
-      )}
+      <TeamBadge team={team ?? null} size={30} />
+      <span className={`flex-1 min-w-0 truncate ${!team || lost ? "text-muted" : "font-semibold"}`}>{team?.name ?? "TBD"}</span>
       {final && <span className={`display text-2xl tabular ${lost ? "text-muted" : ""}`}>{score}</span>}
       {won && <span className="w-0 h-0 border-y-[5px] border-y-transparent border-r-[6px] border-r-text -mr-1" aria-label="Winner" />}
     </div>
   );
 
   return (
-    <div className={`card p-3 ${mine ? "ring-1 ring-accent/50" : ""}`}>
+    <div className={`card relative p-3 hover:bg-surface-2 active:bg-surface-2 transition-colors ${mine ? "ring-1 ring-accent/50" : ""}`}>
+      {/* Whole card opens the game; interactive bits below sit above this link. */}
+      <Link
+        href={`/l/${leagueId}/games/${game.id}`}
+        className="absolute inset-0 rounded-[inherit]"
+        aria-label={`${away?.name ?? "TBD"} at ${home?.name ?? "TBD"}, ${final ? "final" : formatGameDate(game.scheduled_at)}`}
+      />
       <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-muted mb-2.5">
         <span>
           {game.week ? `Week ${game.week} · ` : ""}
           {formatGameDate(game.scheduled_at)}
         </span>
-        <span className={final ? "text-text" : ""}>{final ? "Final" : formatGameTime(game.scheduled_at)}</span>
+        <span className={`inline-flex items-center gap-0.5 ${final ? "text-text" : ""}`}>
+          {final ? "Final" : formatGameTime(game.scheduled_at)}
+          <ChevronRight size={13} className="text-muted -mr-1" />
+        </span>
       </div>
       <div className="space-y-2">
         {row(away, game.away_score, awayWon, homeWon)}
@@ -59,7 +63,11 @@ export function GameCard({
           <MapPin size={12} /> {game.location}
         </div>
       )}
-      {rsvp && !final && <RsvpBar info={rsvp} />}
+      {rsvp && !final && (
+        <div className="relative z-10">
+          <RsvpBar info={rsvp} />
+        </div>
+      )}
     </div>
   );
 }

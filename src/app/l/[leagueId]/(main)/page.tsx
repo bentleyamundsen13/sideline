@@ -202,7 +202,14 @@ export default async function LeagueHome({ params }: PageProps<"/l/[leagueId]">)
 
       {rated.length > 0 && (
         <section>
-          <SectionHeader title="League leaders" />
+          <SectionHeader
+            title="League leaders"
+            action={
+              <Link href={`${base}/leaders`} className="text-xs font-semibold text-muted hover:text-text">
+                All leaders
+              </Link>
+            }
+          />
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
             {leaders.map(({ label, l }) => (
               <div key={label} className="card p-3">

@@ -29,7 +29,12 @@ export function BottomNav({ base, me, teamId, teamColor, youBadge }: Props) {
     pathname.startsWith(`${base}/notifications`);
 
   const tabs = [
-    { href: base, label: "Home", active: pathname === base || pathname.startsWith(`${base}/schedule`), icon: <Home size={22} /> },
+    {
+      href: base,
+      label: "Home",
+      active: pathname === base || ["schedule", "games", "leaders"].some((p) => pathname.startsWith(`${base}/${p}`)),
+      icon: <Home size={22} />,
+    },
     {
       href: `${base}/teams`,
       label: "Teams",
