@@ -9,7 +9,7 @@
 
 :root {
   /* Space under the tab bar for the iPhone home-bar line. The installed app
-     already gets an unusable strip there from iOS, so it skips this. */
+     already gets an unusable strip there from iOS, so it uses much less. */
   --nav-pad: min(env(safe-area-inset-bottom), 34px);
   --bg: #0a0c10;
   --surface: #12151c;
@@ -39,7 +39,8 @@
 }
 
 html.standalone {
-  --nav-pad: 0px;
+  /* Just enough to clear the home-bar line. */
+  --nav-pad: 12px;
 }
 
 html {
