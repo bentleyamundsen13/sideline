@@ -65,13 +65,13 @@ function TeamView({ ctx, team }: { ctx: LeagueContext; team: Team }) {
           {team.abbr}
         </div>
         <div className="relative p-5 flex items-center gap-4">
-          <TeamBadge team={team} size={76} />
+          <TeamBadge team={team} size={72} />
           <div className="min-w-0">
-            <div className="text-[11px] uppercase tracking-widest font-semibold text-text/70">
+            <div className="text-[11px] uppercase tracking-widest font-semibold text-text/70 truncate">
               {rank > 0 && record.played > 0 ? `${ordinal(rank)} in ${league.name}` : league.name}
               {isMyTeam && " · Your team"}
             </div>
-            <h1 className="display text-4xl sm:text-5xl truncate">{team.name}</h1>
+            <h1 className="display text-4xl sm:text-5xl leading-[0.95] text-balance break-words mt-0.5">{team.name}</h1>
             <div className="display text-2xl text-text/80 tabular mt-1">{recordString(record)}</div>
           </div>
         </div>

@@ -251,9 +251,12 @@ function TeamEditor({ team, players }: { team: Team; players: Player[] }) {
 
 export function PlayersManager({ meId, teams, players }: { meId: string; teams: Team[]; players: Player[] }) {
   const teamById = new Map(teams.map((t) => [t.id, t]));
+  // Players on teams (by team name), then free agents, then unfinished profiles.
+  const group = (p: Player) => (!p.onboarded ? 2 : p.team_id ? 0 : 1);
   const sorted = [...players].sort(
     (a, b) =>
-      (teamById.get(a.team_id ?? "")?.name ?? "~").localeCompare(teamById.get(b.team_id ?? "")?.name ?? "~") ||
+      group(a) - group(b) ||
+      (teamById.get(a.team_id ?? "")?.name ?? "").localeCompare(teamById.get(b.team_id ?? "")?.name ?? "") ||
       a.display_name.localeCompare(b.display_name),
   );
   return (
@@ -271,7 +274,7 @@ function PlayerAssignRow({ player, teams, team, isMe }: { player: Player; teams:
   const { run, pending, error } = useAction();
   const [confirmRemove, setConfirmRemove] = useState(false);
   return (
-    <div className="px-3 py-2.5">
+    <div className="px-3 py-3">
       <div className="flex items-center gap-3">
         <Avatar member={player} color={team?.color} size="sm" />
         <div className="flex-1 min-w-0">
@@ -279,22 +282,10 @@ function PlayerAssignRow({ player, teams, team, isMe }: { player: Player; teams:
             {player.display_name}
             {isMe && <span className="text-muted font-normal"> (you)</span>}
           </div>
-          {!player.onboarded && <div className="text-xs text-amber-300">Profile not finished</div>}
+          <div className={`text-xs truncate ${player.onboarded ? "text-muted" : "text-amber-300"}`}>
+            {player.onboarded ? (team?.name ?? "Free Agent") : "Profile not finished"}
+          </div>
         </div>
-        <select
-          aria-label={`Team for ${player.display_name}`}
-          className="input !w-36 !py-2 !text-sm"
-          value={player.team_id ?? ""}
-          disabled={pending || !player.onboarded}
-          onChange={(e) => run(() => must(createClient().rpc("assign_player", { p_member: player.id, p_team: e.target.value || null })))}
-        >
-          <option value="">Free Agent</option>
-          {teams.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-            </option>
-          ))}
-        </select>
         {!isMe &&
           (confirmRemove ? (
             <button
@@ -310,7 +301,34 @@ function PlayerAssignRow({ player, teams, team, isMe }: { player: Player; teams:
             </button>
           ))}
       </div>
-      {error && <p className="text-xs text-danger mt-1.5">{error}</p>}
+      {player.onboarded && (
+        <div className="flex items-center gap-2 mt-2 pl-12">
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-muted shrink-0">Team</span>
+          <select
+            aria-label={`Team for ${player.display_name}`}
+            className="input !py-2 !text-sm"
+            value={player.team_id ?? ""}
+            disabled={pending}
+            onChange={(e) => run(() => must(createClient().rpc("assign_player", { p_member: player.id, p_team: e.target.value || null })))}
+          >
+            <option value="">Free Agent</option>
+            {teams.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+      {confirmRemove && (
+        <div className="flex items-center justify-between gap-2 mt-2 pl-12 text-xs text-muted">
+          <span>Remove from the league? Their stats are deleted.</span>
+          <button className="btn btn-ghost btn-sm" onClick={() => setConfirmRemove(false)}>
+            Cancel
+          </button>
+        </div>
+      )}
+      {error && <p className="text-xs text-danger mt-1.5 pl-12">{error}</p>}
     </div>
   );
 }
@@ -334,8 +352,8 @@ export function ScheduleManager({
 }) {
   const { run, pending, error } = useAction();
   const nextWeek = games.reduce((m, g) => Math.max(m, g.week ?? 0), 0) + 1;
-  const [home, setHome] = useState(teams[0]?.id ?? "");
-  const [away, setAway] = useState(teams[1]?.id ?? "");
+  const [away, setAway] = useState(teams[0]?.id ?? "");
+  const [home, setHome] = useState(teams[1]?.id ?? "");
   const [when, setWhen] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + ((7 - d.getDay()) % 7 || 7)); // next Sunday
@@ -373,38 +391,65 @@ export function ScheduleManager({
         <p className="card p-4 text-sm text-muted">Create at least two teams to start scheduling games.</p>
       ) : (
         <form onSubmit={add} className="card p-4 space-y-3">
-          <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-end">
-            <div>
-              <label className="label" htmlFor="away">Away</label>
-              <select id="away" className="input" value={away} onChange={(e) => setAway(e.target.value)}>
-                {teams.map((t) => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
-            </div>
-            <span className="text-muted pb-3 text-sm">@</span>
-            <div>
-              <label className="label" htmlFor="home">Home</label>
-              <select id="home" className="input" value={home} onChange={(e) => setHome(e.target.value)}>
-                {teams.map((t) => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className="grid grid-cols-[1fr_80px] gap-2">
-            <div>
-              <label className="label" htmlFor="when">Kickoff</label>
-              <input id="when" type="datetime-local" className="input" required value={when} onChange={(e) => setWhen(e.target.value)} />
-            </div>
-            <div>
-              <label className="label" htmlFor="week">Week</label>
-              <input id="week" type="number" min={1} max={99} className="input text-center" value={week} onChange={(e) => setWeek(e.target.value)} />
-            </div>
-          </div>
           <div>
-            <label className="label" htmlFor="loc">Location</label>
-            <input id="loc" className="input" maxLength={60} value={location} onChange={(e) => setLocation(e.target.value)} />
+            <span className="label">Matchup</span>
+            <div className="space-y-2">
+              {(
+                [
+                  ["Away", away, setAway],
+                  ["Home", home, setHome],
+                ] as const
+              ).map(([side, value, set], i) => (
+                <div key={side}>
+                  {i === 1 && <div className="text-center text-xs font-semibold text-muted -mt-0.5 mb-1.5">at</div>}
+                  <div className="flex items-center gap-2.5">
+                    <TeamBadge team={teamById.get(value) ?? null} size={40} />
+                    <select aria-label={`${side} team`} className="input flex-1" value={value} onChange={(e) => set(e.target.value)}>
+                      {teams.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.name}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="w-11 text-[10px] font-semibold uppercase tracking-widest text-muted">{side}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="min-w-0">
+              <label className="label" htmlFor="when-date">Date</label>
+              <input
+                id="when-date"
+                type="date"
+                className="input"
+                required
+                value={when.slice(0, 10)}
+                onChange={(e) => e.target.value && setWhen(`${e.target.value}T${when.slice(11, 16)}`)}
+              />
+            </div>
+            <div className="min-w-0">
+              <label className="label" htmlFor="when-time">Time</label>
+              <input
+                id="when-time"
+                type="time"
+                className="input"
+                required
+                value={when.slice(11, 16)}
+                onChange={(e) => e.target.value && setWhen(`${when.slice(0, 10)}T${e.target.value}`)}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-[76px_1fr] gap-2">
+            <div className="min-w-0">
+              <label className="label" htmlFor="week">Week</label>
+              <input id="week" type="number" inputMode="numeric" min={1} max={99} className="input text-center" value={week} onChange={(e) => setWeek(e.target.value)} />
+            </div>
+            <div className="min-w-0">
+              <label className="label" htmlFor="loc">Location</label>
+              <input id="loc" className="input" maxLength={60} placeholder="Optional" value={location} onChange={(e) => setLocation(e.target.value)} />
+            </div>
           </div>
           <FormError error={error ?? (home === away ? "Pick two different teams." : null)} />
           <button className="btn btn-primary w-full" disabled={pending || home === away}>
@@ -448,6 +493,7 @@ function GameEditor({ game, home, away }: { game: Game; home?: Team; away?: Team
       <span className="text-sm font-semibold truncate flex-1">{team?.name}</span>
       <input
         aria-label={`${team?.name} score`}
+        placeholder="Pts"
         type="number"
         inputMode="numeric"
         min={0}

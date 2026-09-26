@@ -30,9 +30,9 @@ export async function proxy(request: NextRequest) {
   });
 
   // Refreshes the session cookie if needed. Do not remove.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims() verifies the token locally when possible (faster than getUser()).
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims?.sub ?? null;
 
   const path = request.nextUrl.pathname;
   const isPublic = PUBLIC_PATHS.some((p) => (p === "/" ? path === "/" : path.startsWith(p)));

@@ -13,19 +13,15 @@ import type { News } from "@/lib/types";
 export default async function LeagueHome({ params }: PageProps<"/l/[leagueId]">) {
   const { leagueId } = await params;
   const ctx = await getLeagueContext(leagueId);
-  const { league, me, teams, members, games, teamById, records, ranked, captainTeam, statsByMember, ovrByMember, supabase } = ctx;
+  const { league, me, teams, members, games, teamById, records, ranked, captainTeam, statsByMember, ovrByMember, supabase, incomingTrades } = ctx;
   const base = `/l/${leagueId}`;
 
-  const [{ data: newsData }, incoming] = await Promise.all([
-    supabase.from("news").select("*").eq("league_id", leagueId).order("created_at", { ascending: false }).limit(15),
-    captainTeam
-      ? supabase
-          .from("trades")
-          .select("id", { count: "exact", head: true })
-          .eq("receiver_team_id", captainTeam.id)
-          .eq("status", "pending")
-      : Promise.resolve({ count: 0 }),
-  ]);
+  const { data: newsData } = await supabase
+    .from("news")
+    .select("*")
+    .eq("league_id", leagueId)
+    .order("created_at", { ascending: false })
+    .limit(15);
   const news = (newsData ?? []) as News[];
 
   const players = members.filter((m) => m.onboarded);
@@ -59,8 +55,8 @@ export default async function LeagueHome({ params }: PageProps<"/l/[leagueId]">)
   const callouts: { href: string; icon: typeof Zap; title: string; body: string; strong?: boolean }[] = [];
   if (me.is_commissioner && teams.length === 0)
     callouts.push({ href: `${base}/manage`, icon: Settings, title: "Set up your league", body: "Create teams and pick captains to get the draft started.", strong: true });
-  if ((incoming.count ?? 0) > 0)
-    callouts.push({ href: `${base}/trades`, icon: ArrowLeftRight, title: `${incoming.count} trade offer${incoming.count === 1 ? "" : "s"} waiting`, body: "Accept, decline, or counter.", strong: true });
+  if (incomingTrades > 0)
+    callouts.push({ href: `${base}/trades`, icon: ArrowLeftRight, title: `${incomingTrades} trade offer${incomingTrades === 1 ? "" : "s"} waiting`, body: "Accept, decline, or counter.", strong: true });
   if (captainTeam && freeAgents.length > 0)
     callouts.push({ href: `${base}/teams/${FREE_AGENTS_ID}`, icon: UserPlus, title: `${freeAgents.length} free agent${freeAgents.length === 1 ? "" : "s"} available`, body: `Draft them to ${captainTeam.name}.` });
   if (!me.team_id && !captainTeam)

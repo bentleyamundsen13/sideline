@@ -3,6 +3,7 @@ import { ArrowRight, ArrowLeftRight, Bell, ChevronRight, Plus, Trophy, Users, Za
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/auth";
 import { LAST_LEAGUE_COOKIE } from "@/lib/constants";
 import { TeamBadge, Wordmark } from "@/components/ui";
 import { SignOutButton } from "@/components/sign-out-button";
@@ -18,9 +19,7 @@ type MyLeagueRow = {
 
 export default async function Home({ searchParams }: PageProps<"/">) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser(supabase);
 
   if (!user) return <Landing />;
 

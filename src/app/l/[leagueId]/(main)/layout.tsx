@@ -9,18 +9,8 @@ import { RememberLeague } from "@/components/remember-league";
 export default async function LeagueLayout({ children, params }: LayoutProps<"/l/[leagueId]">) {
   const { leagueId } = await params;
   const ctx = await getLeagueContext(leagueId);
-  const { league, me, captainTeam, myTeam, supabase } = ctx;
+  const { league, me, myTeam, incomingTrades } = ctx;
   if (!me.onboarded) redirect(`/l/${leagueId}/onboarding`);
-
-  let pendingTrades = 0;
-  if (captainTeam) {
-    const { count } = await supabase
-      .from("trades")
-      .select("id", { count: "exact", head: true })
-      .eq("receiver_team_id", captainTeam.id)
-      .eq("status", "pending");
-    pendingTrades = count ?? 0;
-  }
 
   return (
     <>
@@ -41,7 +31,7 @@ export default async function LeagueLayout({ children, params }: LayoutProps<"/l
         me={{ id: me.id, display_name: me.display_name, avatar_url: me.avatar_url }}
         teamId={myTeam?.id ?? null}
         teamColor={myTeam?.color ?? null}
-        youBadge={pendingTrades}
+        youBadge={incomingTrades}
       />
     </>
   );

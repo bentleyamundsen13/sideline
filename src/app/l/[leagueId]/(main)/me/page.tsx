@@ -13,17 +13,16 @@ export const metadata = { title: "You" };
 export default async function YouPage({ params }: PageProps<"/l/[leagueId]/me">) {
   const { leagueId } = await params;
   const ctx = await getLeagueContext(leagueId);
-  const { me, myTeam, captainTeam, league, ovrByMember, statsByMember, supabase } = ctx;
+  const { me, myTeam, captainTeam, league, ovrByMember, statsByMember, supabase, incomingTrades: pendingTrades } = ctx;
   const base = `/l/${leagueId}`;
   const color = myTeam?.color ?? FREE_AGENT_COLOR;
   const games = statsByMember.get(me.id)?.games ?? 0;
 
-  const [{ count: pendingTrades }, { count: unreadNotifications }] = await Promise.all([
-    captainTeam
-      ? supabase.from("trades").select("id", { count: "exact", head: true }).eq("receiver_team_id", captainTeam.id).eq("status", "pending")
-      : Promise.resolve({ count: 0 }),
-    supabase.from("notifications").select("id", { count: "exact", head: true }).eq("league_id", leagueId).is("read_at", null),
-  ]);
+  const { count: unreadNotifications } = await supabase
+    .from("notifications")
+    .select("id", { count: "exact", head: true })
+    .eq("league_id", leagueId)
+    .is("read_at", null);
 
   const rows = [
     { href: `${base}/players/${me.id}`, icon: User, label: "My profile", sub: "Stats, game log, bio" },

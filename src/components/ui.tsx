@@ -55,6 +55,8 @@ export function Avatar({
       <img
         src={member.avatar_url}
         alt=""
+        loading="lazy"
+        decoding="async"
         style={style}
         className={`shrink-0 rounded-full object-cover bg-surface-2 ${className}`}
       />
