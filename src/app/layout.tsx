@@ -5,6 +5,7 @@ import { AppResume } from "@/components/app-resume";
 import { InstallGuide } from "@/components/install-guide";
 import { ViewportHeal } from "@/components/viewport-heal";
 import { DebugOverlay } from "@/components/debug-overlay";
+import { Splash } from "@/components/splash";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 const barlow = Barlow_Condensed({
@@ -45,6 +46,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         />
       </head>
       <body className="font-sans">
+        <Splash />
         {children}
         <AppResume />
         <ViewportHeal />
