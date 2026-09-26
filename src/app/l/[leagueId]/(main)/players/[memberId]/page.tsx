@@ -79,18 +79,21 @@ export default async function PlayerPage({ params }: PageProps<"/l/[leagueId]/pl
             {player.jersey_number}
           </div>
         )}
-        <div className="relative p-5 pb-4 flex items-end gap-4">
+        {/* Phone: photo + OVR on top, name full-width below. Wider: all in one row. */}
+        <div className="relative p-5 pb-4 grid grid-cols-[auto_1fr_auto] items-end gap-x-4 gap-y-3">
           <Avatar member={player} color={color} size="xl" />
-          <div className="min-w-0 flex-1 pb-1">
+          <div className="col-span-3 row-start-2 sm:col-span-1 sm:col-start-2 sm:row-start-1 min-w-0 pb-1">
             {player.nickname && <div className="text-sm text-text/70 italic">&ldquo;{player.nickname}&rdquo;</div>}
-            <h1 className="display text-4xl leading-[0.95] break-words">{player.display_name}</h1>
+            <h1 className="display text-4xl leading-[0.95] text-balance break-words">{player.display_name}</h1>
             <div className="flex flex-wrap gap-1.5 mt-2">
               {player.jersey_number != null && <span className="chip !text-text">#{player.jersey_number}</span>}
               {player.offense_position && <span className="chip">OFF · {player.offense_position}</span>}
               {player.defense_position && <span className="chip">DEF · {player.defense_position}</span>}
             </div>
           </div>
-          <OvrBadge ovr={ovr} size="lg" />
+          <div className="col-start-3 row-start-1 self-start sm:self-end">
+            <OvrBadge ovr={ovr} size="lg" />
+          </div>
         </div>
         <Link
           href={team ? `${base}/teams/${team.id}` : `${base}/teams/${FREE_AGENTS_ID}`}
