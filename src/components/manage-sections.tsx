@@ -573,7 +573,7 @@ export function NewsComposer({ leagueId, authorId }: { leagueId: string; authorI
   }
 
   return (
-    <Section id="news" title="Post news" subtitle="Announcements show up on the league home page. Trades, drafts and results post automatically.">
+    <Section id="news" title="Post news" subtitle="Announcements go on the league home page and notify everyone in the league. Trades, drafts and results post automatically.">
       <form onSubmit={post} className="card p-4 space-y-3">
         <input className="input" aria-label="Headline" required maxLength={120} placeholder="Headline" value={title} onChange={(e) => setTitle(e.target.value)} />
         <textarea className="input min-h-24" aria-label="Details" maxLength={2000} placeholder="Details (optional)" value={body} onChange={(e) => setBody(e.target.value)} />
