@@ -5,7 +5,6 @@ import { GameCard } from "@/components/game-card";
 import { NewsFeed } from "@/components/news-feed";
 import { Avatar, EmptyState, OvrBadge, SectionHeader, TeamBadge } from "@/components/ui";
 import { TeamTheme } from "@/components/team-theme";
-import { PushToggle } from "@/components/push-toggle";
 import { recordString } from "@/lib/format";
 import { FREE_AGENTS_ID } from "@/lib/constants";
 import { requestTime } from "@/lib/time";
@@ -100,8 +99,6 @@ export default async function LeagueHome({ params }: PageProps<"/l/[leagueId]">)
           ))}
         </div>
       </section>
-
-      <PushToggle prompt />
 
       {callouts.length > 0 && (
         <section className="space-y-2">

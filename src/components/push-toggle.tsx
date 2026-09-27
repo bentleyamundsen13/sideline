@@ -1,39 +1,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell, BellOff, BellRing, X } from "lucide-react";
+import { Bell, BellOff, BellRing } from "lucide-react";
 import { getPushState, turnOffPush, turnOnPush, type PushState } from "@/lib/push-client";
 import { errorMessage } from "@/lib/format";
 import { OPEN_INSTALL_GUIDE } from "./install-guide";
 
-const PROMPT_DISMISSED = "sideline-push-prompt-dismissed";
-
 /**
- * Notifications on/off card. On the You tab it always shows; as a `prompt` (on
- * Home) it only appears in the installed app while notifications are off, and
- * can be dismissed for good.
+ * Notifications status on the You tab: on/off, blocked, or "add to home screen
+ * first". The first tap in the app already asks (see AutoPushPrompt); this is
+ * for turning them off, or trying again after declining.
  */
-export function PushToggle({ prompt = false }: { prompt?: boolean }) {
+export function PushToggle() {
   const [state, setState] = useState<PushState | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    getPushState().then((s) => {
-      let hidden = false;
-      try {
-        hidden = prompt && localStorage.getItem(PROMPT_DISMISSED) === "1";
-      } catch {
-        // private mode: show it
-      }
-      setDismissed(hidden);
-      setState(s);
-    });
-  }, [prompt]);
+    getPushState().then(setState);
+  }, []);
 
   if (!state || state === "unsupported") return null;
-  if (prompt && (state !== "off" || dismissed)) return null;
 
   async function toggle() {
     setBusy(true);
@@ -72,22 +59,6 @@ export function PushToggle({ prompt = false }: { prompt?: boolean }) {
           onClick={() => (state === "install-first" ? window.dispatchEvent(new Event(OPEN_INSTALL_GUIDE)) : toggle())}
         >
           {busy ? "…" : copy.action}
-        </button>
-      )}
-      {prompt && (
-        <button
-          className="btn btn-ghost btn-sm !px-2"
-          aria-label="Not now"
-          onClick={() => {
-            setDismissed(true);
-            try {
-              localStorage.setItem(PROMPT_DISMISSED, "1");
-            } catch {
-              // ignore
-            }
-          }}
-        >
-          <X size={16} />
         </button>
       )}
     </div>

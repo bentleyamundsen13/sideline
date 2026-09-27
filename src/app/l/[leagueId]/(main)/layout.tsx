@@ -5,6 +5,7 @@ import { NotificationBell } from "@/components/notification-bell";
 import { BottomNav } from "@/components/bottom-nav";
 import { Logo } from "@/components/ui";
 import { RememberLeague } from "@/components/remember-league";
+import { AutoPushPrompt } from "@/components/auto-push-prompt";
 
 export default async function LeagueLayout({ children, params }: LayoutProps<"/l/[leagueId]">) {
   const { leagueId } = await params;
@@ -15,6 +16,7 @@ export default async function LeagueLayout({ children, params }: LayoutProps<"/l
   return (
     <>
       <RememberLeague leagueId={league.id} />
+      <AutoPushPrompt />
       {/* Solid (not frosted) so iOS doesn't show a half-blurred bar under the clock. */}
       <header className="sticky top-0 z-40 bg-bg border-b border-line pt-[env(safe-area-inset-top)]">
         <div className="mx-auto max-w-3xl pl-4 pr-2 h-14 flex items-center gap-1">
