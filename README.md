@@ -66,6 +66,7 @@ these you haven't yet (each is safe to run twice):
 - [`007_player_of_the_game.sql`](supabase/migrations/007_player_of_the_game.sql): Player of the Game announcements
 - [`008_pass_breakups.sql`](supabase/migrations/008_pass_breakups.sql): pass breakups (replaces forced fumbles in the app)
 - [`009_announcement_notifications.sql`](supabase/migrations/009_announcement_notifications.sql): announcements notify the league
+- [`010_news_likes_comments.sql`](supabase/migrations/010_news_likes_comments.sql): likes and comments on news
 
 ## Push notifications
 

@@ -9,6 +9,7 @@ import { PushToggle } from "@/components/push-toggle";
 import { recordString } from "@/lib/format";
 import { FREE_AGENTS_ID } from "@/lib/constants";
 import { requestTime } from "@/lib/time";
+import { loadNewsSocial } from "@/lib/news-social";
 import type { News } from "@/lib/types";
 
 export default async function LeagueHome({ params }: PageProps<"/l/[leagueId]">) {
@@ -17,13 +18,17 @@ export default async function LeagueHome({ params }: PageProps<"/l/[leagueId]">)
   const { league, me, teams, members, games, teamById, records, ranked, captainTeam, statsByMember, ovrByMember, supabase, incomingTrades } = ctx;
   const base = `/l/${leagueId}`;
 
+  // News lives for 24 hours, then drops off the feed (it stays in the database).
+  const since = new Date(requestTime() - 24 * 3600_000).toISOString();
   const { data: newsData } = await supabase
     .from("news")
     .select("*")
     .eq("league_id", leagueId)
+    .gte("created_at", since)
     .order("created_at", { ascending: false })
-    .limit(15);
+    .limit(30);
   const news = (newsData ?? []) as News[];
+  const social = await loadNewsSocial(ctx, news);
 
   const players = members.filter((m) => m.onboarded);
   const freeAgents = players.filter((m) => !m.team_id);
@@ -270,7 +275,11 @@ export default async function LeagueHome({ params }: PageProps<"/l/[leagueId]">)
             ) : undefined
           }
         />
-        {news.length === 0 ? <EmptyState title="No news yet" /> : <NewsFeed items={news} />}
+        {news.length === 0 ? (
+          <EmptyState title="Nothing new today" body="Posts from the last 24 hours show up here." />
+        ) : (
+          <NewsFeed items={news} social={social} />
+        )}
       </section>
     </div>
   );
