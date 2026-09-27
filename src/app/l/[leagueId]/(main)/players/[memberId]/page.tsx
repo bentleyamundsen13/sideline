@@ -7,7 +7,7 @@ import { TeamTheme } from "@/components/team-theme";
 import { DraftButton } from "@/components/draft-button";
 import { PlayerHero } from "@/components/player-hero";
 import { catchRate, completionPct } from "@/lib/ovr";
-import { formatGameDate, formatHeight } from "@/lib/format";
+import { formatDay, formatHeight } from "@/lib/format";
 import { FREE_AGENT_COLOR } from "@/lib/constants";
 import type { StatLine } from "@/lib/types";
 
@@ -194,7 +194,7 @@ export default async function PlayerPage({ params }: PageProps<"/l/[leagueId]/pl
                     <tr key={l.id} className="border-b border-line last:border-0">
                       <td className="py-2.5 pl-4">
                         <div className="font-medium">{opp ? `vs ${opp.name}` : l.game_id ? "League game" : "Pickup"}</div>
-                        <div className="text-xs text-muted">{formatGameDate(l.played_on + "T12:00:00")}</div>
+                        <div className="text-xs text-muted">{formatDay(l.played_on)}</div>
                       </td>
                       {showPassingLog && (
                         <td className="text-center px-2 whitespace-nowrap">

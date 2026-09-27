@@ -1,4 +1,5 @@
 import { getLeagueContext } from "@/lib/league";
+import { leagueTz } from "@/lib/time-zone";
 import { EmptyState } from "@/components/ui";
 import {
   LeagueSettings,
@@ -13,6 +14,7 @@ export const metadata = { title: "Manage league" };
 export default async function ManagePage({ params }: PageProps<"/l/[leagueId]/manage">) {
   const { leagueId } = await params;
   const { league, me, teams, members, games } = await getLeagueContext(leagueId);
+  const tz = leagueTz(league);
 
   if (!me.is_commissioner) {
     return <EmptyState title="Commissioner only" body="Only the league commissioner can manage teams and the schedule." />;
@@ -50,9 +52,9 @@ export default async function ManagePage({ params }: PageProps<"/l/[leagueId]/ma
       </div>
       <TeamsManager leagueId={leagueId} teams={teams} players={players} />
       <PlayersManager meId={me.id} teams={teams} players={players} />
-      <ScheduleManager key={teams.length} leagueId={leagueId} teams={teams} games={games} defaultLocation={league.location} />
+      <ScheduleManager key={`${teams.length}-${tz}`} leagueId={leagueId} teams={teams} games={games} defaultLocation={league.location} tz={tz} />
       <NewsComposer leagueId={leagueId} authorId={me.id} />
-      <LeagueSettings league={league} />
+      <LeagueSettings key={tz} league={league} tz={tz} />
     </div>
   );
 }

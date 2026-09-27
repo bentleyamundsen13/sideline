@@ -942,3 +942,11 @@ create trigger news_comment_posted after insert on public.news_comments
 for each row execute function public.on_news_comment();
 
 notify pgrst, 'reload schema';
+
+
+alter table public.leagues add column if not exists timezone text;
+
+-- The commissioner can set it (the app fills it in automatically from their phone).
+grant update (timezone) on public.leagues to authenticated;
+
+notify pgrst, 'reload schema';

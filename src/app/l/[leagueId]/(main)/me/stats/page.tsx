@@ -1,7 +1,7 @@
 import { getLeagueContext } from "@/lib/league";
 import { BackHeader } from "@/components/back-header";
 import { StatLogger } from "@/components/stat-logger";
-import { formatGameDate } from "@/lib/format";
+import { formatGameDate, isoToZoned, leagueTz } from "@/lib/time-zone";
 import { requestTime } from "@/lib/time";
 import type { StatLine } from "@/lib/types";
 
@@ -9,7 +9,8 @@ export const metadata = { title: "Log stats" };
 
 export default async function StatsPage({ params }: PageProps<"/l/[leagueId]/me/stats">) {
   const { leagueId } = await params;
-  const { me, games, teamById, supabase, ovrModel } = await getLeagueContext(leagueId);
+  const { me, games, teamById, supabase, ovrModel, league } = await getLeagueContext(leagueId);
+  const tz = leagueTz(league);
 
   const { data } = await supabase
     .from("stat_lines")
@@ -35,8 +36,9 @@ export default async function StatsPage({ params }: PageProps<"/l/[leagueId]/me/
       const oppId = g.home_team_id === me.team_id ? g.away_team_id : g.home_team_id;
       return {
         id: g.id,
-        label: `vs ${teamById.get(oppId)?.name ?? "TBD"} · ${formatGameDate(g.scheduled_at)}`,
-        date: g.scheduled_at.slice(0, 10),
+        label: `vs ${teamById.get(oppId)?.name ?? "TBD"} · ${formatGameDate(g.scheduled_at, tz)}`,
+        // The calendar day it was played in the league's time zone (evening games are already "tomorrow" in UTC).
+        date: isoToZoned(g.scheduled_at, tz).date,
       };
     });
 

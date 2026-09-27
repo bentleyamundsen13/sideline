@@ -27,13 +27,9 @@ export function textOn(hex: string) {
   return lum > 0.35 ? "#0b0d12" : "#ffffff";
 }
 
-export function formatGameDate(iso: string) {
-  const d = new Date(iso);
-  return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
-}
-
-export function formatGameTime(iso: string) {
-  return new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+/** A calendar day like "2026-09-27" → "Sun, Sep 27", the same everywhere (no time zone involved). */
+export function formatDay(day: string) {
+  return new Date(`${day}T12:00:00Z`).toLocaleDateString("en-US", { timeZone: "UTC", weekday: "short", month: "short", day: "numeric" });
 }
 
 export function timeAgo(iso: string) {

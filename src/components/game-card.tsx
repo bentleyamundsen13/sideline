@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ChevronRight, MapPin } from "lucide-react";
-import { formatGameDate, formatGameTime } from "@/lib/format";
+import { formatGameDate, formatGameTime } from "@/lib/time-zone";
 import type { Game, Team } from "@/lib/types";
 import type { RsvpInfo } from "@/lib/league";
 import { TeamBadge } from "./ui";
@@ -14,6 +14,7 @@ export function GameCard({
   leagueId,
   highlightTeamId,
   rsvp,
+  tz,
 }: {
   game: Game;
   home: Team | undefined;
@@ -21,6 +22,8 @@ export function GameCard({
   leagueId: string;
   highlightTeamId?: string | null;
   rsvp?: RsvpInfo;
+  /** League time zone: game times read the same for everyone. */
+  tz: string;
 }) {
   const final = game.status === "final";
   const homeWon = final && game.home_score! > game.away_score!;
@@ -42,15 +45,15 @@ export function GameCard({
       <Link
         href={`/l/${leagueId}/games/${game.id}`}
         className="absolute inset-0 rounded-[inherit]"
-        aria-label={`${away?.name ?? "TBD"} at ${home?.name ?? "TBD"}, ${final ? "final" : formatGameDate(game.scheduled_at)}`}
+        aria-label={`${away?.name ?? "TBD"} at ${home?.name ?? "TBD"}, ${final ? "final" : formatGameDate(game.scheduled_at, tz)}`}
       />
       <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-muted mb-2.5">
         <span>
           {game.week ? `Week ${game.week} · ` : ""}
-          {formatGameDate(game.scheduled_at)}
+          {formatGameDate(game.scheduled_at, tz)}
         </span>
         <span className={`inline-flex items-center gap-0.5 ${final ? "text-text" : ""}`}>
-          {final ? "Final" : formatGameTime(game.scheduled_at)}
+          {final ? "Final" : formatGameTime(game.scheduled_at, tz)}
           <ChevronRight size={13} className="text-muted -mr-1" />
         </span>
       </div>

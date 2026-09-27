@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, ChevronDown, Crown, Plus, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { must, useAction } from "@/lib/use-action";
-import { abbrFromName, formatGameDate, formatGameTime } from "@/lib/format";
+import { abbrFromName } from "@/lib/format";
+import { formatGameDate, formatGameTime, isoToZoned, tzAbbreviation, tzName, US_TIME_ZONES, zonedToIso } from "@/lib/time-zone";
 import { SPORTS, TEAM_COLORS } from "@/lib/constants";
 import type { Game, League, Team } from "@/lib/types";
 import { Avatar, TeamBadge } from "./ui";
@@ -335,8 +336,12 @@ function PlayerAssignRow({ player, teams, team, isMe }: { player: Player; teams:
 
 /* --------------------------------------------------------------- Schedule */
 
-function localInputValue(d: Date) {
-  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+/** Next Sunday's date as it reads on the calendar in `tz` ("2026-10-04"). */
+function nextSundayIn(tz: string) {
+  const [y, m, d] = isoToZoned(new Date().toISOString(), tz).date.split("-").map(Number);
+  const today = new Date(Date.UTC(y, m - 1, d));
+  today.setUTCDate(today.getUTCDate() + ((7 - today.getUTCDay()) % 7 || 7));
+  return today.toISOString().slice(0, 10);
 }
 
 export function ScheduleManager({
@@ -344,22 +349,21 @@ export function ScheduleManager({
   teams,
   games,
   defaultLocation,
+  tz,
 }: {
   leagueId: string;
   teams: Team[];
   games: Game[];
   defaultLocation: string | null;
+  /** League time zone: the date and time typed here are clock time there. */
+  tz: string;
 }) {
   const { run, pending, error } = useAction();
   const nextWeek = games.reduce((m, g) => Math.max(m, g.week ?? 0), 0) + 1;
   const [away, setAway] = useState(teams[0]?.id ?? "");
   const [home, setHome] = useState(teams[1]?.id ?? "");
-  const [when, setWhen] = useState(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + ((7 - d.getDay()) % 7 || 7)); // next Sunday
-    d.setHours(14, 0, 0, 0);
-    return localInputValue(d);
-  });
+  // "YYYY-MM-DDTHH:MM" as clock time in the league's time zone, not the phone's.
+  const [when, setWhen] = useState(() => `${nextSundayIn(tz)}T14:00`);
   const [location, setLocation] = useState(defaultLocation ?? "");
   const [week, setWeek] = useState(String(nextWeek));
   const teamById = new Map(teams.map((t) => [t.id, t]));
@@ -374,7 +378,7 @@ export function ScheduleManager({
             league_id: leagueId,
             home_team_id: home,
             away_team_id: away,
-            scheduled_at: new Date(when).toISOString(),
+            scheduled_at: zonedToIso(when.slice(0, 10), when.slice(11, 16), tz),
             location: location.trim() || null,
             week: week ? Number(week) : null,
           }),
@@ -441,6 +445,9 @@ export function ScheduleManager({
               />
             </div>
           </div>
+          <p className="text-xs text-muted -mt-1">
+            {tzName(tz)} time ({tzAbbreviation(tz)}). Everyone sees this exact time, wherever they are.
+          </p>
           <div className="grid grid-cols-[76px_1fr] gap-2">
             <div className="min-w-0">
               <label className="label" htmlFor="week">Week</label>
@@ -461,7 +468,7 @@ export function ScheduleManager({
       {upcoming.length > 0 && (
         <div className="card divide-y divide-line">
           {upcoming.map((g) => (
-            <GameEditor key={g.id} game={g} home={teamById.get(g.home_team_id)} away={teamById.get(g.away_team_id)} />
+            <GameEditor key={g.id} tz={tz} game={g} home={teamById.get(g.home_team_id)} away={teamById.get(g.away_team_id)} />
           ))}
         </div>
       )}
@@ -470,7 +477,7 @@ export function ScheduleManager({
           <h3 className="section-title pt-2 px-1">Final</h3>
           <div className="card divide-y divide-line">
             {finals.map((g) => (
-              <GameEditor key={g.id} game={g} home={teamById.get(g.home_team_id)} away={teamById.get(g.away_team_id)} />
+              <GameEditor key={g.id} tz={tz} game={g} home={teamById.get(g.home_team_id)} away={teamById.get(g.away_team_id)} />
             ))}
           </div>
         </>
@@ -479,7 +486,7 @@ export function ScheduleManager({
   );
 }
 
-function GameEditor({ game, home, away }: { game: Game; home?: Team; away?: Team }) {
+function GameEditor({ game, home, away, tz }: { game: Game; home?: Team; away?: Team; tz: string }) {
   const { run, pending, error } = useAction();
   const [homeScore, setHomeScore] = useState(game.home_score?.toString() ?? "");
   const [awayScore, setAwayScore] = useState(game.away_score?.toString() ?? "");
@@ -509,7 +516,7 @@ function GameEditor({ game, home, away }: { game: Game; home?: Team; away?: Team
       <div className="flex items-center justify-between text-xs text-muted">
         <span>
           {game.week ? `Week ${game.week} · ` : ""}
-          {formatGameDate(game.scheduled_at)} · {formatGameTime(game.scheduled_at)}
+          {formatGameDate(game.scheduled_at, tz)} · {formatGameTime(game.scheduled_at, tz)}
         </span>
         {confirmDelete ? (
           <button className="text-danger font-semibold" disabled={pending} onClick={() => run(() => must(createClient().from("games").delete().eq("id", game.id)))}>
@@ -588,18 +595,30 @@ export function NewsComposer({ leagueId, authorId }: { leagueId: string; authorI
 
 /* ----------------------------------------------------------------- League */
 
-export function LeagueSettings({ league }: { league: League }) {
+export function LeagueSettings({ league, tz }: { league: League; tz: string }) {
   const { run, pending, error } = useAction();
+  const autoSet = useAction();
   const [f, setF] = useState({
     name: league.name,
     sport: league.sport,
     season: league.season ?? "",
     location: league.location ?? "",
     description: league.description ?? "",
+    timezone: tz,
   });
   const [saved, setSaved] = useState(false);
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setF((s) => ({ ...s, [k]: e.target.value }));
+  const zones = US_TIME_ZONES.some((z) => z.tz === f.timezone) ? US_TIME_ZONES : [...US_TIME_ZONES, { tz: f.timezone, label: tzName(f.timezone) }];
+
+  // First visit: use the commissioner's phone time zone so game times match what they type.
+  const needsZone = !league.timezone;
+  const { run: runAutoSet } = autoSet;
+  useEffect(() => {
+    if (!needsZone) return;
+    const mine = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (mine) runAutoSet(() => must(createClient().from("leagues").update({ timezone: mine }).eq("id", league.id)));
+  }, [needsZone, league.id, runAutoSet]);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -613,6 +632,8 @@ export function LeagueSettings({ league }: { league: League }) {
             season: f.season.trim() || null,
             location: f.location.trim() || null,
             description: f.description.trim() || null,
+            // Only send when changed, so saving still works before migration 011 is run.
+            ...(f.timezone !== tz ? { timezone: f.timezone } : {}),
           })
           .eq("id", league.id),
       );
@@ -659,6 +680,17 @@ export function LeagueSettings({ league }: { league: League }) {
         <div>
           <label className="label" htmlFor="l-desc">About</label>
           <textarea id="l-desc" className="input min-h-20" maxLength={300} value={f.description} onChange={set("description")} />
+        </div>
+        <div>
+          <label className="label" htmlFor="l-tz">Time zone</label>
+          <select id="l-tz" className="input" value={f.timezone} onChange={set("timezone")}>
+            {zones.map((z) => (
+              <option key={z.tz} value={z.tz}>
+                {z.label} ({tzAbbreviation(z.tz)})
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-muted mt-1.5">Game times show in this time zone for everyone, even if they&apos;re traveling.</p>
         </div>
         <FormError error={error} />
         <button className="btn btn-primary w-full" disabled={pending}>

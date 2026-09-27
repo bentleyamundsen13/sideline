@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeftRight, ChevronRight, MapPin, Settings, UserPlus, Zap } from "lucide-react";
 import { getLeagueContext, rsvpFor } from "@/lib/league";
+import { leagueTz } from "@/lib/time-zone";
 import { GameCard } from "@/components/game-card";
 import { NewsFeed } from "@/components/news-feed";
 import { Avatar, EmptyState, OvrBadge, SectionHeader, TeamBadge } from "@/components/ui";
@@ -140,7 +141,7 @@ export default async function LeagueHome({ params }: PageProps<"/l/[leagueId]">)
         ) : (
           <div className="grid sm:grid-cols-2 gap-3">
             {upcoming.map((g) => (
-              <GameCard key={g.id} game={g} home={teamById.get(g.home_team_id)} away={teamById.get(g.away_team_id)} leagueId={leagueId} highlightTeamId={me.team_id} rsvp={rsvpFor(ctx, g)} />
+              <GameCard tz={leagueTz(ctx.league)} key={g.id} game={g} home={teamById.get(g.home_team_id)} away={teamById.get(g.away_team_id)} leagueId={leagueId} highlightTeamId={me.team_id} rsvp={rsvpFor(ctx, g)} />
             ))}
           </div>
         )}
@@ -196,7 +197,7 @@ export default async function LeagueHome({ params }: PageProps<"/l/[leagueId]">)
           <SectionHeader title="Recent results" />
           <div className="grid sm:grid-cols-2 gap-3">
             {results.map((g) => (
-              <GameCard key={g.id} game={g} home={teamById.get(g.home_team_id)} away={teamById.get(g.away_team_id)} leagueId={leagueId} highlightTeamId={me.team_id} />
+              <GameCard tz={leagueTz(ctx.league)} key={g.id} game={g} home={teamById.get(g.home_team_id)} away={teamById.get(g.away_team_id)} leagueId={leagueId} highlightTeamId={me.team_id} />
             ))}
           </div>
         </section>

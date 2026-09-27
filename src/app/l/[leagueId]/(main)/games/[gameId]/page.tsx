@@ -8,7 +8,7 @@ import { RsvpBar } from "@/components/rsvp-bar";
 import { Avatar, SectionHeader, TeamBadge } from "@/components/ui";
 import { statSummary } from "@/lib/ovr";
 import { playerOfTheGame } from "@/lib/potg";
-import { formatGameDate, formatGameTime } from "@/lib/format";
+import { formatGameDate, formatGameTime, leagueTz, tzAbbreviation } from "@/lib/time-zone";
 import type { Game, Member, StatLine, Team } from "@/lib/types";
 
 export const metadata = { title: "Game" };
@@ -34,7 +34,7 @@ export default async function GamePage({ params }: PageProps<"/l/[leagueId]/game
       <TeamTheme color={null} />
       <BackHeader href={`${base}/schedule`} label="Schedule" />
 
-      <Scoreboard game={game} home={home} away={away} base={base}>
+      <Scoreboard game={game} home={home} away={away} base={base} tz={leagueTz(ctx.league)}>
         {!final && <RsvpBar info={rsvpFor(ctx, game)} />}
       </Scoreboard>
 
@@ -84,12 +84,14 @@ function Scoreboard({
   home,
   away,
   base,
+  tz,
   children,
 }: {
   game: Game;
   home?: Team;
   away?: Team;
   base: string;
+  tz: string;
   children?: React.ReactNode;
 }) {
   const final = game.status === "final";
@@ -108,12 +110,13 @@ function Scoreboard({
     <section className="card p-5">
       <div className="text-center text-[11px] font-semibold uppercase tracking-widest text-muted">
         {game.week ? `Week ${game.week} · ` : ""}
-        {formatGameDate(game.scheduled_at)}
+        {formatGameDate(game.scheduled_at, tz)}
       </div>
       <div className="flex items-start gap-3 mt-4">
         {side(away, game.away_score, awayWon, homeWon)}
         <div className="pt-4 text-center shrink-0 w-16">
-          <div className={`display text-lg ${final ? "" : "text-muted"}`}>{final ? "Final" : formatGameTime(game.scheduled_at)}</div>
+          <div className={`display text-lg ${final ? "" : "text-muted"}`}>{final ? "Final" : formatGameTime(game.scheduled_at, tz)}</div>
+          {!final && <div className="text-[10px] text-muted">{tzAbbreviation(tz, game.scheduled_at)}</div>}
           <div className="text-xs text-muted mt-0.5">at</div>
         </div>
         {side(home, game.home_score, homeWon, awayWon)}

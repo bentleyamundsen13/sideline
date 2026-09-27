@@ -8,6 +8,8 @@ export type League = {
   code: string;
   creator_id: string;
   created_at: string;
+  /** IANA zone (e.g. "America/Chicago") game times are shown in. Optional until migration 011. */
+  timezone?: string | null;
 };
 
 export type Team = {

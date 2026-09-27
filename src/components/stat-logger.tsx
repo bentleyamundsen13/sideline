@@ -5,7 +5,7 @@ import { Minus, Plus, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { must, useAction } from "@/lib/use-action";
 import { completionPct, computeOvr, sumLines, type OvrModel } from "@/lib/ovr";
-import { formatGameDate } from "@/lib/format";
+import { formatDay } from "@/lib/format";
 import type { StatLine } from "@/lib/types";
 import { FormError } from "./form-error";
 import { OvrBadge } from "./ui";
@@ -289,7 +289,7 @@ function LoggedLine({ line, label }: { line: StatLine; label: string }) {
     <div className="flex items-center gap-3 px-4 py-3">
       <div className="flex-1 min-w-0">
         <div className="text-sm font-semibold">
-          {label} <span className="text-muted font-normal">· {formatGameDate(line.played_on + "T12:00:00")}</span>
+          {label} <span className="text-muted font-normal">· {formatDay(line.played_on)}</span>
         </div>
         <div className="text-xs text-muted">{summary || "No stats"}</div>
       </div>
