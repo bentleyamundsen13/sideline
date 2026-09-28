@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import { ArrowUp, Camera, Smile, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { chatKey, markChatSeen } from "@/lib/chat-seen";
@@ -11,6 +10,7 @@ import { errorMessage, textOn } from "@/lib/format";
 import type { Sticker, TeamMessage } from "@/lib/types";
 import { Avatar } from "./ui";
 import { StickerTray } from "./sticker-tray";
+import { PhotoViewer } from "./photo-viewer";
 
 export type ChatMember = { id: string; name: string; avatarUrl: string | null; color: string | null };
 
@@ -337,17 +337,7 @@ export function ChatRoom({
         </form>
       </div>
 
-      {viewing &&
-        createPortal(
-          <button className="fixed inset-0 z-[95] bg-black/95 flex items-center justify-center p-4" onClick={() => setViewing(null)} aria-label="Close photo">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={viewing} alt="Photo" className="max-w-full max-h-full object-contain rounded-lg" />
-            <span className="absolute right-4 w-10 h-10 rounded-full bg-white/15 text-white inline-flex items-center justify-center" style={{ top: "calc(1rem + env(safe-area-inset-top))" }}>
-              <X size={20} />
-            </span>
-          </button>,
-          document.body,
-        )}
+      {viewing && <PhotoViewer src={viewing} leagueId={leagueId} memberId={meId} onClose={() => setViewing(null)} />}
     </div>
   );
 }

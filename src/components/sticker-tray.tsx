@@ -5,6 +5,7 @@ import { Plus, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { errorMessage } from "@/lib/format";
 import type { Sticker } from "@/lib/types";
+import { STICKERS_CHANGED } from "@/lib/stickers";
 import { StickerMaker } from "./sticker-maker";
 
 /** The league's stickers. Tap one to send it; make new ones from photos. */
@@ -25,15 +26,20 @@ export function StickerTray({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    createClient()
-      .from("stickers")
-      .select("*")
-      .eq("league_id", leagueId)
-      .order("created_at", { ascending: false })
-      .then(({ data, error }) => {
-        if (error) setError(errorMessage(error));
-        setStickers((data ?? []) as Sticker[]);
-      });
+    const load = () =>
+      createClient()
+        .from("stickers")
+        .select("*")
+        .eq("league_id", leagueId)
+        .order("created_at", { ascending: false })
+        .then(({ data, error }) => {
+          if (error) setError(errorMessage(error));
+          setStickers((data ?? []) as Sticker[]);
+        });
+    load();
+    // Stickers saved elsewhere (e.g. "Create sticker" on a photo) show up here right away.
+    window.addEventListener(STICKERS_CHANGED, load);
+    return () => window.removeEventListener(STICKERS_CHANGED, load);
   }, [leagueId]);
 
   async function remove(s: Sticker) {
@@ -94,10 +100,8 @@ export function StickerTray({
           leagueId={leagueId}
           memberId={memberId}
           onClose={() => setMaking(false)}
-          onSaved={(s) => {
-            setMaking(false);
-            setStickers((list) => [s, ...(list ?? [])]);
-          }}
+          // Saving fires STICKERS_CHANGED, which reloads the tray.
+          onSaved={() => setMaking(false)}
         />
       )}
     </div>
