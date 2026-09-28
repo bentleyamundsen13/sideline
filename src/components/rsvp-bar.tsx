@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { Check, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -37,10 +38,17 @@ export function RsvpBar({ info }: { info: RsvpInfo }) {
 
   return (
     <div className="mt-3 pt-3 border-t border-line flex items-center gap-2">
-      <div className="flex-1 text-xs text-muted tabular">
-        <span className={count.in ? "text-success font-semibold" : ""}>{count.in} in</span>
-        {count.out > 0 && <span> · {count.out} out</span>}
-        {error && <span className="block text-danger">{error}</span>}
+      <div className="flex-1 min-w-0">
+        {/* Tap the count to see exactly who's in, out, or hasn't answered. */}
+        <Link
+          href={`/l/${info.leagueId}/games/${info.gameId}#playing`}
+          className="inline-flex items-center gap-0.5 text-xs text-muted tabular py-1.5 -my-1.5 hover:text-text"
+        >
+          <span className={count.in ? "text-success font-semibold" : ""}>{count.in} in</span>
+          {count.out > 0 && <span>&nbsp;· {count.out} out</span>}
+          <span className="ml-1 underline underline-offset-2 decoration-dotted">Who?</span>
+        </Link>
+        {error && <span className="block text-xs text-danger">{error}</span>}
       </div>
       {info.canRsvp && (
         <div className="flex gap-1.5" role="group" aria-label="Are you playing?">

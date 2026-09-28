@@ -64,7 +64,7 @@ export default async function GamePage({ params }: PageProps<"/l/[leagueId]/game
           <OtherLines ctx={ctx} game={game} lines={lines} />
         </section>
       ) : (
-        <section className="space-y-4">
+        <section id="playing" className="space-y-4 scroll-mt-20">
           <SectionHeader title="Who's playing" />
           {[away, home].map((team) => (team ? <Attendance key={team.id} ctx={ctx} team={team} game={game} /> : null))}
         </section>
