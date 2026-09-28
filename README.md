@@ -66,6 +66,8 @@ these you haven't yet (each is safe to run twice):
 - [`008_pass_breakups.sql`](supabase/migrations/008_pass_breakups.sql): pass breakups (replaces forced fumbles in the app)
 - [`009_announcement_notifications.sql`](supabase/migrations/009_announcement_notifications.sql): announcements notify the league
 - [`010_news_likes_comments.sql`](supabase/migrations/010_news_likes_comments.sql): likes and comments on news
+- [`011_league_time_zone.sql`](supabase/migrations/011_league_time_zone.sql): league time zone for game times
+- [`012_league_chat_photos_stickers.sql`](supabase/migrations/012_league_chat_photos_stickers.sql): league chat, photos and stickers
 
 ## Push notifications
 

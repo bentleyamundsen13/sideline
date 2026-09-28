@@ -2,24 +2,24 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 import { Home, MessageCircle, Shield } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-import { CHAT_SEEN_EVENT, getChatSeen } from "@/lib/chat-seen";
-import type { TeamMessage } from "@/lib/types";
+import { useUnreadChats } from "@/lib/use-unread-chat";
 import { Avatar } from "./ui";
 
 type Props = {
   base: string;
+  leagueId: string;
   me: { id: string; display_name: string; avatar_url: string | null };
   teamId: string | null;
   teamColor: string | null;
   youBadge: number;
 };
 
-export function BottomNav({ base, me, teamId, teamColor, youBadge }: Props) {
+export function BottomNav({ base, leagueId, me, teamId, teamColor, youBadge }: Props) {
   const pathname = usePathname();
-  const unread = useUnreadChat(teamId, me.id, pathname === `${base}/chat`);
+  const chats = useUnreadChats(leagueId, teamId, me.id);
+  // Team + league chat together. On the Chat screen the tabs up top show each one instead.
+  const unread = pathname === `${base}/chat` ? 0 : chats.team + chats.league;
 
   const isYou =
     pathname.startsWith(`${base}/me`) ||
@@ -82,37 +82,4 @@ export function BottomNav({ base, me, teamId, teamColor, youBadge }: Props) {
       </div>
     </nav>
   );
-}
-
-/** Messages from teammates since you last opened the chat, kept live. */
-function useUnreadChat(teamId: string | null, myMemberId: string, onChatPage: boolean) {
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    if (!teamId) return;
-    const supabase = createClient();
-    const refresh = () =>
-      supabase
-        .from("team_messages")
-        .select("id", { count: "exact", head: true })
-        .eq("team_id", teamId)
-        .neq("member_id", myMemberId)
-        .gt("created_at", getChatSeen(teamId))
-        .then(({ count }) => setCount(count ?? 0));
-    refresh();
-
-    const channel = supabase
-      .channel(`chat-badge:${teamId}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "team_messages", filter: `team_id=eq.${teamId}` }, (p) => {
-        if ((p.new as TeamMessage).member_id !== myMemberId) setCount((c) => c + 1);
-      })
-      .subscribe();
-    window.addEventListener(CHAT_SEEN_EVENT, refresh);
-    return () => {
-      supabase.removeChannel(channel);
-      window.removeEventListener(CHAT_SEEN_EVENT, refresh);
-    };
-  }, [teamId, myMemberId]);
-
-  return teamId && !onChatPage ? count : 0;
 }

@@ -1,25 +1,38 @@
 import Link from "next/link";
-import { MessageCircle } from "lucide-react";
 import { getLeagueContext, rosterOf } from "@/lib/league";
-import { TeamChat } from "@/components/team-chat";
+import { ChatRoom } from "@/components/chat-room";
+import { ChatTabs } from "@/components/chat-tabs";
 import { TeamTheme } from "@/components/team-theme";
 import { EmptyState, TeamBadge } from "@/components/ui";
 import { FREE_AGENTS_ID } from "@/lib/constants";
 import type { TeamMessage } from "@/lib/types";
 
-export const metadata = { title: "Team chat" };
+export const metadata = { title: "Chat" };
 
-export default async function ChatPage({ params }: PageProps<"/l/[leagueId]/chat">) {
+const BRAND = "#c8f135";
+
+export default async function ChatPage({ params, searchParams }: PageProps<"/l/[leagueId]/chat">) {
   const { leagueId } = await params;
+  const { c } = await searchParams;
   const ctx = await getLeagueContext(leagueId);
-  const { me, myTeam, members, supabase } = ctx;
+  const { me, myTeam, members, teamById, league, supabase } = ctx;
 
-  if (!myTeam) {
+  // Team chat by default; the league chat if you pick it (or aren't on a team yet).
+  const channel: "team" | "league" = c === "league" || !myTeam ? "league" : "team";
+  const teamId = channel === "team" ? myTeam!.id : null;
+
+  const tabs = (
+    <ChatTabs leagueId={leagueId} teamId={myTeam?.id ?? null} meId={me.id} active={channel} teamLabel={myTeam?.name ?? "Team"} />
+  );
+
+  // Free agents can open the Team tab but there's nothing there yet.
+  if (c === "team" && !myTeam) {
     return (
-      <div className="animate-fade-up pt-6">
+      <div className="animate-fade-up space-y-4">
+        {tabs}
         <EmptyState
           title="No team chat yet"
-          body="Team chat unlocks once you're on a team. Captains can draft you from Free Agents."
+          body="Team chat unlocks once you're on a team. The League chat is open to everyone."
           action={
             <Link href={`/l/${leagueId}/teams/${FREE_AGENTS_ID}`} className="btn btn-secondary btn-sm">
               See Free Agents
@@ -30,33 +43,42 @@ export default async function ChatPage({ params }: PageProps<"/l/[leagueId]/chat
     );
   }
 
-  const { data } = await supabase
-    .from("team_messages")
-    .select("*")
-    .eq("team_id", myTeam.id)
-    .order("created_at", { ascending: false })
-    .limit(150);
+  let query = supabase.from("team_messages").select("*").eq("league_id", leagueId);
+  query = teamId ? query.eq("team_id", teamId) : query.is("team_id", null);
+  const { data } = await query.order("created_at", { ascending: false }).limit(150);
   const initial = ((data ?? []) as TeamMessage[]).reverse();
-  const roster = rosterOf(ctx, myTeam.id);
+
+  const roster = myTeam ? rosterOf(ctx, myTeam.id) : [];
+  const leagueCount = members.filter((m) => m.onboarded).length;
 
   return (
     <>
-      <TeamTheme color={myTeam.color} />
-      <TeamChat
+      <TeamTheme color={channel === "team" ? myTeam!.color : null} />
+      <ChatRoom
+        key={channel}
         leagueId={leagueId}
-        teamId={myTeam.id}
-        teamColor={myTeam.color}
+        teamId={teamId}
+        accent={channel === "team" ? myTeam!.color : BRAND}
         meId={me.id}
-        members={members.map((m) => ({ id: m.id, display_name: m.display_name, avatar_url: m.avatar_url }))}
+        canModerate={me.is_commissioner}
+        members={members.map((m) => ({
+          id: m.id,
+          name: m.display_name,
+          avatarUrl: m.avatar_url,
+          color: m.team_id ? (teamById.get(m.team_id)?.color ?? null) : null,
+        }))}
         initial={initial}
+        placeholder={channel === "team" ? "Message your team" : "Message the league"}
+        emptyBody={channel === "team" ? "Only your teammates can see this chat." : "Everyone in the league can see this chat."}
         header={
-          <div className="flex items-center gap-3 pb-3 border-b border-line">
-            <TeamBadge team={myTeam} size={40} />
-            <div className="min-w-0 flex-1">
-              <h1 className="display text-2xl truncate">{myTeam.name}</h1>
+          <div className="space-y-3 pb-3 border-b border-line">
+            {tabs}
+            <div className="flex items-center gap-2.5">
+              {channel === "team" ? <TeamBadge team={myTeam} size={30} /> : <TeamBadge team={{ abbr: "ALL", color: BRAND }} size={30} />}
               <p className="text-xs text-muted truncate">
-                <MessageCircle size={11} className="inline -mt-0.5 mr-1" />
-                Team chat · {roster.map((m) => m.display_name.split(" ")[0]).join(", ")}
+                {channel === "team"
+                  ? `Team chat · ${roster.map((m) => m.display_name.split(" ")[0]).join(", ")}`
+                  : `League chat · everyone in ${league.name} (${leagueCount})`}
               </p>
             </div>
           </div>

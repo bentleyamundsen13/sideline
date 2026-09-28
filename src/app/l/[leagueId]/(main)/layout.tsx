@@ -30,6 +30,7 @@ export default async function LeagueLayout({ children, params }: LayoutProps<"/l
       <main className="mx-auto max-w-3xl px-4 pt-5 pb-nav">{children}</main>
       <BottomNav
         base={`/l/${league.id}`}
+        leagueId={league.id}
         me={{ id: me.id, display_name: me.display_name, avatar_url: me.avatar_url }}
         teamId={myTeam?.id ?? null}
         teamColor={myTeam?.color ?? null}

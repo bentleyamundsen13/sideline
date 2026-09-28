@@ -1,18 +1,22 @@
-// When you last looked at your team chat, per team, so the tab can show unread.
-const key = (teamId: string) => `sideline-chat-seen-${teamId}`;
+// When you last looked at each chat, so tabs can show unread counts.
+// A chat is identified by its team id, or "league-<league id>" for the league chat.
 export const CHAT_SEEN_EVENT = "sideline:chat-seen";
 
-export function getChatSeen(teamId: string): string {
+export const chatKey = (leagueId: string, teamId: string | null) => (teamId ? teamId : `league-${leagueId}`);
+
+const storageKey = (key: string) => `sideline-chat-seen-${key}`;
+
+export function getChatSeen(key: string): string {
   try {
-    return localStorage.getItem(key(teamId)) ?? new Date(0).toISOString();
+    return localStorage.getItem(storageKey(key)) ?? new Date(0).toISOString();
   } catch {
     return new Date(0).toISOString();
   }
 }
 
-export function markChatSeen(teamId: string) {
+export function markChatSeen(key: string) {
   try {
-    localStorage.setItem(key(teamId), new Date().toISOString());
+    localStorage.setItem(storageKey(key), new Date().toISOString());
   } catch {
     // private mode: unread badge just resets each visit
   }

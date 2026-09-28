@@ -137,12 +137,24 @@ export type Notification = {
   created_at: string;
 };
 
+/** A chat message. team_id null = the league-wide chat. Text, a photo, a sticker, or a photo with a caption. */
 export type TeamMessage = {
   id: string;
   league_id: string;
-  team_id: string;
+  team_id: string | null;
   member_id: string | null;
-  body: string;
+  body: string | null;
+  image_url?: string | null;
+  sticker_url?: string | null;
+  created_at: string;
+};
+
+export type Sticker = {
+  id: string;
+  league_id: string;
+  member_id: string | null;
+  name: string;
+  image_url: string;
   created_at: string;
 };
 
