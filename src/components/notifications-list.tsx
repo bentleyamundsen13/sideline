@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { closeSystemNotifications } from "@/lib/chat-seen";
 import type { Notification } from "@/lib/types";
 import { NotificationItem } from "./notification-bell";
 
@@ -15,6 +16,7 @@ export function NotificationsList({ items }: { items: Notification[] }) {
         .update({ read_at: new Date().toISOString() })
         .in("id", unread)
         .then(() => window.dispatchEvent(new Event("sideline:notifications-read")));
+      closeSystemNotifications((tag) => unread.includes(tag));
     }
   }, [items]);
 

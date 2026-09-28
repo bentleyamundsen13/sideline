@@ -84,10 +84,14 @@ export function ChatRoom({
     };
   }, [leagueId, teamId, key]);
 
-  // Everything on screen counts as read.
+  // Everything on screen counts as read, on every device you're signed in on.
+  // Only while you're actually looking: not if the app is in the background.
   useEffect(() => {
-    markChatSeen(key);
-  }, [key, messages.length]);
+    const seen = () => document.visibilityState === "visible" && markChatSeen(key, meId);
+    seen();
+    document.addEventListener("visibilitychange", seen);
+    return () => document.removeEventListener("visibilitychange", seen);
+  }, [key, meId, messages.length]);
 
   // Start at the newest message; follow new ones if you're already at the bottom.
   const stickToBottom = () => {

@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeftRight, Bell, Crown, UserPlus, Megaphone, Check, X } from "lucide-react";
+import { ArrowLeftRight, Bell, Crown, UserPlus, Megaphone, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { closeSystemNotifications } from "@/lib/chat-seen";
 import { timeAgo } from "@/lib/format";
 import type { Notification } from "@/lib/types";
 
@@ -54,6 +55,15 @@ export function NotificationBell({ userId, leagueId }: { userId: string; leagueI
           router.refresh();
         },
       )
+      // Read on another device: clear it here too.
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
+        (payload) => {
+          const n = payload.new as Notification;
+          setItems((prev) => prev.map((x) => (x.id === n.id ? { ...x, read_at: n.read_at } : x)));
+        },
+      )
       .subscribe();
     window.addEventListener("sideline:notifications-read", load);
     return () => {
@@ -77,18 +87,29 @@ export function NotificationBell({ userId, leagueId }: { userId: string; leagueI
   }, [open]);
 
   const unread = items.filter((n) => !n.read_at).length;
+  // What was new when you opened the bell stays highlighted until you close it.
+  const [fresh, setFresh] = useState<Set<string>>(new Set());
 
-  async function markRead(ids: string[]) {
+  function toggle() {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    // Opening the bell means you've seen them, on every device.
+    const ids = items.filter((n) => !n.read_at).map((n) => n.id);
+    setFresh(new Set(ids));
+    setOpen(true);
     if (ids.length === 0) return;
     const now = new Date().toISOString();
     setItems((prev) => prev.map((n) => (ids.includes(n.id) ? { ...n, read_at: n.read_at ?? now } : n)));
-    await createClient().from("notifications").update({ read_at: now }).in("id", ids);
+    createClient().from("notifications").update({ read_at: now }).in("id", ids).then(() => {});
+    closeSystemNotifications((tag) => ids.includes(tag));
   }
 
   return (
     <div ref={panel} className="relative">
       <button
-        onClick={() => setOpen((o) => !o)}
+        onClick={toggle}
         className="relative w-10 h-10 inline-flex items-center justify-center rounded-xl hover:bg-surface-2 transition-colors"
         aria-label={`Notifications${unread ? `, ${unread} unread` : ""}`}
         aria-expanded={open}
@@ -105,28 +126,14 @@ export function NotificationBell({ userId, leagueId }: { userId: string; leagueI
         <div className="fixed left-2 right-2 top-[calc(3.5rem+env(safe-area-inset-top))] sm:absolute sm:left-auto sm:right-0 sm:top-12 sm:w-96 card shadow-2xl shadow-black/50 overflow-hidden z-50 animate-fade-up">
           <div className="flex items-center justify-between px-4 py-3 border-b border-line">
             <span className="display text-lg">Notifications</span>
-            <div className="flex items-center gap-1">
-              {unread > 0 && (
-                <button className="btn btn-ghost btn-sm" onClick={() => markRead(items.filter((n) => !n.read_at).map((n) => n.id))}>
-                  <Check size={14} /> Mark all read
-                </button>
-              )}
-              <button className="btn btn-ghost btn-sm sm:hidden" onClick={() => setOpen(false)} aria-label="Close">
-                <X size={16} />
-              </button>
-            </div>
+            <button className="btn btn-ghost btn-sm sm:hidden" onClick={() => setOpen(false)} aria-label="Close">
+              <X size={16} />
+            </button>
           </div>
           <div className="max-h-[60vh] overflow-y-auto">
             {items.length === 0 && <p className="text-sm text-muted text-center py-10">You&apos;re all caught up.</p>}
             {items.map((n) => (
-              <NotificationItem
-                key={n.id}
-                n={n}
-                onClick={() => {
-                  markRead([n.id]);
-                  setOpen(false);
-                }}
-              />
+              <NotificationItem key={n.id} n={fresh.has(n.id) ? { ...n, read_at: null } : n} onClick={() => setOpen(false)} />
             ))}
           </div>
           <Link
