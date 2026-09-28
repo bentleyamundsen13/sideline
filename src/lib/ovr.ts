@@ -5,139 +5,119 @@ type Counts = Pick<StatTotals, "games" | "touchdowns" | "interceptions" | "fumbl
 type Line = Omit<Counts, "games">;
 
 /**
- * OVR: how good you are at what you do, compared with others in your league
- * who do the same thing. Madden-style, 40-99, with 70 = average.
+ * OVR: how good your games are compared with the rest of your league.
+ * Madden-style, 40-99. New players start at 60; 70 is a typical regular.
  *
- *  1. Roles. Production is split into receiving/rushing, passing and defense.
- *     Each role is rated only against players who actually play it, so a 70 QB
- *     is an average QB and a 70 corner is an average defender.
- *  2. Per game. Playing more games doesn't inflate anything.
- *  3. Sample size. Everyone starts each role as if they'd played PRIOR_GAMES
- *     average games; real games gradually outweigh that. One monster game barely
- *     moves you, a season of great games makes you a star.
- *  4. Combining roles. Your best role is your rating; being above average in a
- *     second role adds a bonus. Roles you barely play (a receiver with one
- *     tackle a game) are ignored, and a weaker second role never costs you.
- *  5. Diminishing returns. A curve that flattens near the top, so each step up
- *     is harder than the last and 99 means far above everyone, consistently.
+ *  1. Whole game. Every stat you logged adds up to one number per game
+ *     (offense, defense and passing together), so one stat on its own can't
+ *     define you. That number is averaged across your games.
+ *  2. Start at 60. Everyone begins as if they'd already played PRIOR_GAMES
+ *     games at a 60 level. A quiet first game leaves you at 60; each real game
+ *     slowly outweighs that start, so it takes a run of good games to climb.
+ *  3. League-relative. Compared with your league's average and spread, so
+ *     ratings mean the same whether your league scores a lot or a little.
+ *  4. Diminishing returns. A curve that flattens near the top: each step up is
+ *     harder than the last, and 99 means far above everyone, consistently.
  *
  * Ratings are relative, so they can shift slightly as others log games.
  */
+export type OvrModel = {
+  /** League-average production per game. */
+  avg: number;
+  /** How spread out players are. */
+  sd: number;
+  /** League completion rate, the baseline passers are compared with. */
+  cmp: number;
+};
 
-type Role = "offense" | "passing" | "defense";
-const ROLES: Role[] = ["offense", "passing", "defense"];
-
-type RoleModel = { avg: number; sd: number };
-export type OvrModel = { roles: Record<Role, RoleModel>; cmp: number };
-
-const PRIOR_GAMES = 6; // average games everyone starts each role with
-const PRIOR_WEIGHT_GAMES = 6; // how quickly a league's own averages take over
-const PRIOR_WEIGHT_PLAYERS = 4; // how quickly a league's own spreads take over
+const PRIOR_GAMES = 8; // head start in games: one game is a nudge, a season is a real rating
+const PRIOR_AVG = 10; // expected production per game before a league has data
+const PRIOR_AVG_GAMES = 8; // how quickly a league's own average takes over
+const PRIOR_SD = 9; // expected spread before a league has data
+const PRIOR_SD_PLAYERS = 4; // how quickly a league's own spread takes over
 const PRIOR_CMP = 0.55; // completion % before a league has enough passes
 const PRIOR_CMP_ATTEMPTS = 20;
 
-/** Expected average and spread per role before a league has its own data. */
-const PRIORS: Record<Role, RoleModel> = {
-  offense: { avg: 8, sd: 8 },
-  passing: { avg: 6, sd: 8 },
-  defense: { avg: 7, sd: 5 },
-};
+/** Where on the curve a 60 sits: 70 + 30·tanh(z/2) = 60. */
+const Z_AT_60 = -2 * Math.atanh(1 / 3);
+
+export const DEFAULT_OVR_MODEL: OvrModel = { avg: PRIOR_AVG, sd: PRIOR_SD, cmp: PRIOR_CMP };
+
+/** Everything you did in a game, as one number (per game, averaged over your games). */
+function productionPerGame(s: Counts, cmpBaseline = PRIOR_CMP): number {
+  const per = (n: number | undefined) => (n ?? 0) / s.games;
+  let points =
+    // Scoring and catching
+    8 * per(s.touchdowns) +
+    2 * per(s.receptions) -
+    4 * per(s.drops) -
+    6 * per(s.fumbles) +
+    // Defense
+    12 * per(s.interceptions) +
+    4 * per(s.pass_breakups) +
+    1.5 * per(s.tackles);
+
+  const attempts = s.pass_attempts ?? 0;
+  if (attempts > 0) {
+    const pct = (s.pass_completions ?? 0) / attempts;
+    // Completion % vs the league's, counting fully once you throw ~10 a game.
+    const volume = Math.min(1, per(attempts) / 10);
+    points +=
+      8 * per(s.pass_tds) -
+      8 * per(s.ints_thrown) +
+      // Moving the ball counts too, so a steady QB's game adds up like anyone else's.
+      1 * per(s.pass_completions) +
+      (pct - cmpBaseline) * 40 * volume;
+  }
+  return points;
+}
+
+/** Production that corresponds to a 60 in this league. */
+const level60 = (m: OvrModel) => m.avg + Z_AT_60 * m.sd;
 
 /**
- * A role only counts once you really play it, per game. (Receivers make the odd
- * tackle; that shouldn't turn them into "defenders" and skew the defensive bar.)
+ * The head start everyone is given, set so a first game with nothing logged
+ * lands exactly on 60 (a quiet game pulls you just to 60, not below it).
  */
-const MIN_ACTIVITY: Record<Role, number> = { offense: 1.5, passing: 3, defense: 2 };
+const startingLevel = (m: OvrModel) => (level60(m) * (PRIOR_GAMES + 1)) / PRIOR_GAMES;
 
-export const DEFAULT_OVR_MODEL: OvrModel = { roles: PRIORS, cmp: PRIOR_CMP };
-
-const per = (s: Counts, n: number | undefined) => (n ?? 0) / s.games;
-
-/** Value added per game in each role. */
-function roleProduction(s: Counts, role: Role, cmpBaseline: number): number {
-  switch (role) {
-    case "offense":
-      return 8 * per(s, s.touchdowns) + 2 * per(s, s.receptions) - 4 * per(s, s.drops) - 6 * per(s, s.fumbles);
-    case "defense":
-      return 12 * per(s, s.interceptions) + 4 * per(s, s.pass_breakups) + 1.5 * per(s, s.tackles);
-    case "passing": {
-      const attempts = s.pass_attempts ?? 0;
-      if (attempts === 0) return 0;
-      const pct = (s.pass_completions ?? 0) / attempts;
-      // Completion % vs the league's, counting fully once you throw ~10 a game.
-      const volume = Math.min(1, per(s, attempts) / 10);
-      return 8 * per(s, s.pass_tds) - 8 * per(s, s.ints_thrown) + (pct - cmpBaseline) * 40 * volume;
-    }
-  }
+/** Your per-game production, blended with the PRIOR_GAMES-game head start. */
+function blended(s: Counts, m: OvrModel) {
+  return (productionPerGame(s, m.cmp) * s.games + PRIOR_GAMES * startingLevel(m)) / (s.games + PRIOR_GAMES);
 }
 
-/** How much of a role you actually do per game (touches, throws, defensive plays). */
-function roleActivity(s: Counts, role: Role): number {
-  switch (role) {
-    case "offense":
-      return per(s, s.receptions + s.drops + s.touchdowns + s.fumbles);
-    case "passing":
-      return per(s, s.pass_attempts);
-    case "defense":
-      return per(s, (s.tackles ?? 0) + (s.pass_breakups ?? 0) + s.interceptions);
-  }
-}
-
-/** Roles that count for a player: the ones they really play, or their main one if none clear the bar. */
-function activeRoles(s: Counts): Role[] {
-  const active = ROLES.filter((r) => roleActivity(s, r) >= MIN_ACTIVITY[r]);
-  if (active.length > 0) return active;
-  const busiest = ROLES.reduce((a, b) => (roleActivity(s, b) / MIN_ACTIVITY[b] > roleActivity(s, a) / MIN_ACTIVITY[a] ? b : a));
-  return [busiest];
-}
-
-/** Role production pulled toward that role's average in proportion to how few games you've logged. */
-function shrunk(s: Counts, role: Role, model: OvrModel) {
-  const avg = model.roles[role].avg;
-  return (roleProduction(s, role, model.cmp) * s.games + PRIOR_GAMES * avg) / (s.games + PRIOR_GAMES);
-}
-
-/** Learns each role's average and spread (and the league completion rate) from season totals. */
+/** Learns the league's average, spread and completion rate from season totals. */
 export function buildOvrModel(all: Counts[]): OvrModel {
   const rated = all.filter((s) => s.games > 0);
   const attempts = rated.reduce((a, s) => a + (s.pass_attempts ?? 0), 0);
   const completions = rated.reduce((a, s) => a + (s.pass_completions ?? 0), 0);
   const cmp = (completions + PRIOR_CMP * PRIOR_CMP_ATTEMPTS) / (attempts + PRIOR_CMP_ATTEMPTS);
 
-  const roles = {} as Record<Role, RoleModel>;
-  for (const role of ROLES) {
-    const players = rated.filter((s) => activeRoles(s).includes(role));
-    const prior = PRIORS[role];
-    const games = players.reduce((a, s) => a + s.games, 0);
-    const production = players.reduce((a, s) => a + roleProduction(s, role, cmp) * s.games, 0);
-    const avg = (production + prior.avg * PRIOR_WEIGHT_GAMES) / (games + PRIOR_WEIGHT_GAMES);
-    const draft: OvrModel = { roles: { ...PRIORS, [role]: { avg, sd: prior.sd } }, cmp };
-    const sumSq = players.reduce((a, s) => a + (shrunk(s, role, draft) - avg) ** 2, 0);
-    const sd = Math.sqrt((sumSq + PRIOR_WEIGHT_PLAYERS * prior.sd ** 2) / (players.length + PRIOR_WEIGHT_PLAYERS));
-    roles[role] = { avg, sd: Math.max(sd, prior.sd / 3) };
-  }
-  return { roles, cmp };
+  const games = rated.reduce((a, s) => a + s.games, 0);
+  const production = rated.reduce((a, s) => a + productionPerGame(s, cmp) * s.games, 0);
+  const avg = (production + PRIOR_AVG * PRIOR_AVG_GAMES) / (games + PRIOR_AVG_GAMES);
+
+  // Spread of players' long-run level (their production with small samples
+  // discounted), blended with a sensible default while the league is new.
+  const longRun = rated.map((s) => (productionPerGame(s, cmp) * s.games + PRIOR_GAMES * avg) / (s.games + PRIOR_GAMES));
+  const sumSq = longRun.reduce((a, x) => a + (x - avg) ** 2, 0);
+  const sd = Math.sqrt((sumSq + PRIOR_SD_PLAYERS * PRIOR_SD ** 2) / (rated.length + PRIOR_SD_PLAYERS));
+  return { avg, sd: Math.max(sd, 3), cmp };
 }
 
 /** 40-99. Null until you've logged a game. */
 export function computeOvr(s: Counts | null | undefined, model: OvrModel = DEFAULT_OVR_MODEL): number | null {
   if (!s || s.games <= 0) return null;
-  const zs = activeRoles(s)
-    .map((role) => (shrunk(s, role, model) - model.roles[role].avg) / model.roles[role].sd)
-    .sort((a, b) => b - a);
-  // Your best role, plus a bonus if you're also above average in a second one.
-  // A weaker second role never costs you: specialists aren't punished.
-  const z = zs[0] + 0.3 * Math.max(0, zs[1] ?? 0);
+  const z = (blended(s, model) - model.avg) / model.sd;
   // Above average: gains flatten toward 99 (z of 1 ≈ 82, 2 ≈ 91, 3 ≈ 95).
-  // Below average: falls toward 40 (z of -1 ≈ 56, -2 ≈ 47).
+  // Below: 60 at the starting level, falling toward 40.
   const rating = z >= 0 ? 70 + 29 * Math.tanh(z / 2.2) : 70 + 30 * Math.tanh(z / 2);
   return Math.max(40, Math.min(99, Math.round(rating)));
 }
 
-/** Total value of one game's stat line across all roles. Picks Player of the Game. */
+/** Everything in one game's stat line, as one number. Picks Player of the Game. */
 export function gameScore(line: Line, model: OvrModel = DEFAULT_OVR_MODEL): number {
-  const s = { ...line, games: 1 };
-  return ROLES.reduce((a, r) => a + roleProduction(s, r, model.cmp), 0);
+  return productionPerGame({ ...line, games: 1 }, model.cmp);
 }
 
 /** "3 TD · 7 REC · 9/14 passing" style summary of one stat line (good stuff first). */

@@ -40,18 +40,17 @@ Push to GitHub, import the repo in Vercel, add the same two env vars, deploy.
 
 ### OVR
 
-Computed in [`src/lib/ovr.ts`](src/lib/ovr.ts). OVR is league-relative and role-aware, 40–99 with 70 = average:
+Computed in [`src/lib/ovr.ts`](src/lib/ovr.ts). OVR rates your whole game against the league, 40–99. New players
+start at 60; a typical regular settles around 70.
 
-1. **Production per game, per role:**
-   - Receiving/rushing: `8·TD + 2·REC − 4·DROPS − 6·FUM`
-   - Passing: `8·PASS_TD − 8·INT_THROWN + 40·(CMP% − league CMP%)·volume` (volume ramps to 1 at 10 attempts/game)
-   - Defense: `12·INT + 4·PBU + 1.5·TKL`
-2. **Roles** only count once you play them (1.5 touches, 3 throws or 2 defensive plays per game). Each role is
-   compared only with players who play it.
-3. **Sample size:** each role starts at 6 league-average games; real games gradually outweigh them.
-4. **Scale:** distance from the role's league average, in standard deviations (with sensible priors while the
-   league is new). Best role counts; being above average in a second role adds 30% of that as a bonus.
-5. **Curve:** `70 + 29·tanh(z/2.2)` above average, `70 + 30·tanh(z/2)` below, so gains flatten toward 99.
+1. **Whole-game production per game** (everything together, averaged over your games):
+   `8·TD + 2·REC − 4·DROPS − 6·FUM + 12·INT + 4·PBU + 1.5·TKL`
+   `+ 8·PASS_TD − 8·INT_THROWN + 1·CMP + 40·(CMP% − league CMP%)·volume` (volume ramps to 1 at 10 attempts/game)
+2. **Head start:** everyone starts with 8 games at the 60 level (set so a first game with nothing logged stays at
+   exactly 60). Real games gradually outweigh it, so one game is a nudge and a season is a real rating.
+3. **Scale:** distance from the league's average production, in standard deviations (with sensible priors while
+   the league is new).
+4. **Curve:** `70 + 29·tanh(z/2.2)` above average, `70 + 30·tanh(z/2)` below, so gains flatten toward 99.
 
 ## Upgrading an existing database
 

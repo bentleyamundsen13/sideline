@@ -152,8 +152,9 @@ export default async function PlayerPage({ params }: PageProps<"/l/[leagueId]/pl
           )}
         </div>
         <p className="text-xs text-muted mt-2 px-1">
-          OVR compares your per-game production with others in the league who play the same role (receiver, passer,
-          defender). 70 is average. It takes several games to move far from 70, and each point gets harder near the top.
+          OVR looks at everything you did each game (scoring, catching, passing and defense together) compared with the
+          rest of the league. Everyone starts at 60; it takes a run of good games to climb, and each point gets harder
+          near the top.
         </p>
       </section>
 
