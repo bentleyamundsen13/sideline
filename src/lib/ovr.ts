@@ -5,43 +5,28 @@ type Counts = Pick<StatTotals, "games" | "touchdowns" | "interceptions" | "fumbl
 type Line = Omit<Counts, "games">;
 
 /**
- * OVR: how good your games are compared with the rest of your league.
- * Madden-style, 40-99. New players start at 60; 70 is a typical regular.
+ * OVR, Madden-style, 40-99.
  *
- *  1. Whole game. Every stat you logged adds up to one number per game
- *     (offense, defense and passing together), so one stat on its own can't
- *     define you. That number is averaged across your games.
- *  2. Start at 60. Everyone begins as if they'd already played PRIOR_GAMES
- *     games at a 60 level. A quiet first game leaves you at 60; each real game
- *     slowly outweighs that start, so it takes a run of good games to climb.
- *  3. League-relative. Compared with your league's average and spread, so
- *     ratings mean the same whether your league scores a lot or a little.
- *  4. Diminishing returns. A curve that flattens near the top: each step up is
- *     harder than the last, and 99 means far above everyone, consistently.
+ *  1. Every game gets its own rating. Everything you logged (scoring, catching,
+ *     passing and defense together) adds up to one number, which goes on a
+ *     fixed scale: a quiet game is 55, a solid game mid-70s, a big game 90+,
+ *     and a monster game 99.
+ *  2. Your first game sets your OVR. After that it's the average of all your
+ *     game ratings, so every game carries it on: a great game pulls you up, a
+ *     bad one pulls you down, and the more you've played the steadier it gets.
  *
- * Ratings are relative, so they can shift slightly as others log games.
+ * The scale is fixed, so your rating only moves when you play, never because
+ * of what someone else logged.
  */
 export type OvrModel = {
-  /** League-average production per game. */
-  avg: number;
-  /** How spread out players are. */
-  sd: number;
   /** League completion rate, the baseline passers are compared with. */
   cmp: number;
 };
 
-const PRIOR_GAMES = 8; // head start in games: one game is a nudge, a season is a real rating
-const PRIOR_AVG = 10; // expected production per game before a league has data
-const PRIOR_AVG_GAMES = 8; // how quickly a league's own average takes over
-const PRIOR_SD = 9; // expected spread before a league has data
-const PRIOR_SD_PLAYERS = 4; // how quickly a league's own spread takes over
 const PRIOR_CMP = 0.55; // completion % before a league has enough passes
 const PRIOR_CMP_ATTEMPTS = 20;
 
-/** Where on the curve a 60 sits: 70 + 30·tanh(z/2) = 60. */
-const Z_AT_60 = -2 * Math.atanh(1 / 3);
-
-export const DEFAULT_OVR_MODEL: OvrModel = { avg: PRIOR_AVG, sd: PRIOR_SD, cmp: PRIOR_CMP };
+export const DEFAULT_OVR_MODEL: OvrModel = { cmp: PRIOR_CMP };
 
 /** Everything you did in a game, as one number (per game, averaged over your games). */
 function productionPerGame(s: Counts, cmpBaseline = PRIOR_CMP): number {
@@ -72,47 +57,28 @@ function productionPerGame(s: Counts, cmpBaseline = PRIOR_CMP): number {
   return points;
 }
 
-/** Production that corresponds to a 60 in this league. */
-const level60 = (m: OvrModel) => m.avg + Z_AT_60 * m.sd;
-
 /**
- * The head start everyone is given, set so a first game with nothing logged
- * lands exactly on 60 (a quiet game pulls you just to 60, not below it).
+ * One game's rating. Nothing logged = 55. Above that, gains flatten toward 99:
+ * 1 TD + 4 catches ≈ 77, 3 TD + 6 catches + an INT ≈ 92, ~16 TDs = 99.
+ * Drops, fumbles and picks thrown can take a game below 55, down to 40.
  */
-const startingLevel = (m: OvrModel) => (level60(m) * (PRIOR_GAMES + 1)) / PRIOR_GAMES;
-
-/** Your per-game production, blended with the PRIOR_GAMES-game head start. */
-function blended(s: Counts, m: OvrModel) {
-  return (productionPerGame(s, m.cmp) * s.games + PRIOR_GAMES * startingLevel(m)) / (s.games + PRIOR_GAMES);
+function rateGame(points: number): number {
+  const rating = points >= 0 ? 55 + 44 * (1 - Math.exp(-points / 28)) : 55 + 15 * Math.tanh(points / 12);
+  return Math.max(40, Math.min(99, rating));
 }
 
-/** Learns the league's average, spread and completion rate from season totals. */
+/** Learns the league's completion rate (the bar passers are measured against). */
 export function buildOvrModel(all: Counts[]): OvrModel {
-  const rated = all.filter((s) => s.games > 0);
-  const attempts = rated.reduce((a, s) => a + (s.pass_attempts ?? 0), 0);
-  const completions = rated.reduce((a, s) => a + (s.pass_completions ?? 0), 0);
-  const cmp = (completions + PRIOR_CMP * PRIOR_CMP_ATTEMPTS) / (attempts + PRIOR_CMP_ATTEMPTS);
-
-  const games = rated.reduce((a, s) => a + s.games, 0);
-  const production = rated.reduce((a, s) => a + productionPerGame(s, cmp) * s.games, 0);
-  const avg = (production + PRIOR_AVG * PRIOR_AVG_GAMES) / (games + PRIOR_AVG_GAMES);
-
-  // Spread of players' long-run level (their production with small samples
-  // discounted), blended with a sensible default while the league is new.
-  const longRun = rated.map((s) => (productionPerGame(s, cmp) * s.games + PRIOR_GAMES * avg) / (s.games + PRIOR_GAMES));
-  const sumSq = longRun.reduce((a, x) => a + (x - avg) ** 2, 0);
-  const sd = Math.sqrt((sumSq + PRIOR_SD_PLAYERS * PRIOR_SD ** 2) / (rated.length + PRIOR_SD_PLAYERS));
-  return { avg, sd: Math.max(sd, 3), cmp };
+  const attempts = all.reduce((a, s) => a + (s.pass_attempts ?? 0), 0);
+  const completions = all.reduce((a, s) => a + (s.pass_completions ?? 0), 0);
+  return { cmp: (completions + PRIOR_CMP * PRIOR_CMP_ATTEMPTS) / (attempts + PRIOR_CMP_ATTEMPTS) };
 }
 
-/** 40-99. Null until you've logged a game. */
-export function computeOvr(s: Counts | null | undefined, model: OvrModel = DEFAULT_OVR_MODEL): number | null {
-  if (!s || s.games <= 0) return null;
-  const z = (blended(s, model) - model.avg) / model.sd;
-  // Above average: gains flatten toward 99 (z of 1 ≈ 82, 2 ≈ 91, 3 ≈ 95).
-  // Below: 60 at the starting level, falling toward 40.
-  const rating = z >= 0 ? 70 + 29 * Math.tanh(z / 2.2) : 70 + 30 * Math.tanh(z / 2);
-  return Math.max(40, Math.min(99, Math.round(rating)));
+/** 40-99: the average of your game ratings. Null until you've logged a game. */
+export function computeOvr(lines: Line[] | null | undefined, model: OvrModel = DEFAULT_OVR_MODEL): number | null {
+  if (!lines?.length) return null;
+  const total = lines.reduce((a, l) => a + rateGame(gameScore(l, model)), 0);
+  return Math.round(total / lines.length);
 }
 
 /** Everything in one game's stat line, as one number. Picks Player of the Game. */

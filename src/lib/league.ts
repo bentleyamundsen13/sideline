@@ -4,7 +4,7 @@ import { createClient } from "./supabase/server";
 import { getAuthUser } from "./auth";
 import { buildOvrModel, computeOvr } from "./ovr";
 import { computeRecords, standings } from "./records";
-import type { Game, League, Member, StatTotals, Team } from "./types";
+import type { Game, League, Member, StatLine, StatTotals, Team } from "./types";
 
 /**
  * Everything a league screen needs, loaded once per request and shared between
@@ -16,7 +16,7 @@ export const getLeagueContext = cache(async (leagueId: string) => {
   const user = await getAuthUser(supabase);
   if (!user) redirect("/login");
 
-  const [leagueRes, teamsRes, membersRes, statsRes, gamesRes, pendingRes, rsvpRes] = await Promise.all([
+  const [leagueRes, teamsRes, membersRes, statsRes, gamesRes, pendingRes, rsvpRes, linesRes] = await Promise.all([
     supabase.from("leagues").select("*").eq("id", leagueId).maybeSingle(),
     supabase.from("teams").select("*").eq("league_id", leagueId).order("created_at"),
     supabase.from("members").select("*").eq("league_id", leagueId).order("display_name"),
@@ -25,6 +25,8 @@ export const getLeagueContext = cache(async (leagueId: string) => {
     // Only trades you're allowed to see come back (RLS): yours as a captain, or all as commissioner.
     supabase.from("trades").select("id, receiver_team_id").eq("league_id", leagueId).eq("status", "pending"),
     supabase.from("game_rsvps").select("game_id, member_id, status").eq("league_id", leagueId),
+    // Each game's stat line: OVR rates every game on its own.
+    supabase.from("stat_lines").select("*").eq("league_id", leagueId),
   ]);
 
   // Not in this league (RLS hides it) or it doesn't exist.
@@ -41,9 +43,14 @@ export const getLeagueContext = cache(async (leagueId: string) => {
   const teamById = new Map(teams.map((t) => [t.id, t]));
   const memberById = new Map(members.map((m) => [m.id, m]));
   const statsByMember = new Map(stats.map((s) => [s.member_id, s]));
-  // OVR is relative to the league, so learn the league's averages first.
+  // OVR: the average of each player's game ratings (passers measured against the league's completion %).
   const ovrModel = buildOvrModel(stats);
-  const ovrByMember = new Map(members.map((m) => [m.id, computeOvr(statsByMember.get(m.id), ovrModel)]));
+  const linesByMember = new Map<string, StatLine[]>();
+  for (const l of (linesRes.data ?? []) as StatLine[]) {
+    if (!linesByMember.has(l.member_id)) linesByMember.set(l.member_id, []);
+    linesByMember.get(l.member_id)!.push(l);
+  }
+  const ovrByMember = new Map(members.map((m) => [m.id, computeOvr(linesByMember.get(m.id), ovrModel)]));
   const records = computeRecords(teams, games);
   const ranked = standings(teams, records);
   const captainTeam = teams.find((t) => t.captain_id === me.id) ?? null;

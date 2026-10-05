@@ -152,9 +152,8 @@ export default async function PlayerPage({ params }: PageProps<"/l/[leagueId]/pl
           )}
         </div>
         <p className="text-xs text-muted mt-2 px-1">
-          OVR looks at everything you did each game (scoring, catching, passing and defense together) compared with the
-          rest of the league. Everyone starts at 60; it takes a run of good games to climb, and each point gets harder
-          near the top.
+          Every game gets a rating from everything you did (scoring, catching, passing and defense together). Your first
+          game sets your OVR; after that it&apos;s the average of all your games, so each one moves it up or down.
         </p>
       </section>
 
