@@ -6,6 +6,7 @@ import { EmptyState, SectionHeader } from "@/components/ui";
 import { TeamTheme } from "@/components/team-theme";
 import { DraftButton } from "@/components/draft-button";
 import { PlayerHero } from "@/components/player-hero";
+import { EditStatLineButton, OvrOverride } from "@/components/commish-tools";
 import { catchRate, completionPct } from "@/lib/ovr";
 import { formatDay, formatHeight } from "@/lib/format";
 import { FREE_AGENT_COLOR } from "@/lib/constants";
@@ -14,7 +15,7 @@ import type { StatLine } from "@/lib/types";
 export default async function PlayerPage({ params }: PageProps<"/l/[leagueId]/players/[memberId]">) {
   const { leagueId, memberId } = await params;
   const ctx = await getLeagueContext(leagueId);
-  const { me, teamById, memberById, statsByMember, ovrByMember, captainTeam, captainIds, games, supabase } = ctx;
+  const { me, teamById, memberById, statsByMember, ovrByMember, calculatedOvrByMember, captainTeam, captainIds, games, supabase } = ctx;
   const player = memberById.get(memberId);
   if (!player) notFound();
 
@@ -154,8 +155,18 @@ export default async function PlayerPage({ params }: PageProps<"/l/[leagueId]/pl
         <p className="text-xs text-muted mt-2 px-1">
           Every game gets a rating from everything you did (scoring, catching, passing and defense together). Your first
           game sets your OVR; after that it&apos;s the average of all your games, so each one moves it up or down.
+          {player.ovr_override != null && " This player's OVR was set by the commissioner."}
         </p>
       </section>
+
+      {me.is_commissioner && (
+        <OvrOverride
+          memberId={player.id}
+          firstName={player.display_name.split(" ")[0]}
+          override={player.ovr_override ?? null}
+          calculated={calculatedOvrByMember.get(player.id) ?? null}
+        />
+      )}
 
       <section>
         <SectionHeader title="Game log" />
@@ -190,11 +201,19 @@ export default async function PlayerPage({ params }: PageProps<"/l/[leagueId]/pl
               <tbody>
                 {lines.map((l) => {
                   const opp = opponentFor(l);
+                  const name = opp ? `vs ${opp.name}` : l.game_id ? "League game" : "Pickup";
                   return (
                     <tr key={l.id} className="border-b border-line last:border-0">
                       <td className="py-2.5 pl-4">
-                        <div className="font-medium">{opp ? `vs ${opp.name}` : l.game_id ? "League game" : "Pickup"}</div>
-                        <div className="text-xs text-muted">{formatDay(l.played_on)}</div>
+                        <div className="flex items-center gap-1">
+                          <div className="min-w-0">
+                            <div className="font-medium whitespace-nowrap">{name}</div>
+                            <div className="text-xs text-muted">{formatDay(l.played_on)}</div>
+                          </div>
+                          {me.is_commissioner && (
+                            <EditStatLineButton line={l} label={`${name} · ${formatDay(l.played_on)}`} playerName={player.display_name} />
+                          )}
+                        </div>
                       </td>
                       {showPassingLog && (
                         <td className="text-center px-2 whitespace-nowrap">

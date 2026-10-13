@@ -10,7 +10,7 @@ import type { StatLine } from "@/lib/types";
 import { FormError } from "./form-error";
 import { OvrBadge } from "./ui";
 
-const FIELDS = [
+export const FIELDS = [
   { key: "touchdowns", label: "Touchdowns", hint: "Ran it in or caught it", good: true },
   { key: "receptions", label: "Receptions", hint: "Catches", good: true },
   { key: "tackles", label: "Tackles", hint: "Stops (flag pulls count)", good: true },
@@ -20,15 +20,15 @@ const FIELDS = [
   { key: "fumbles", label: "Fumbles", hint: "Ball on the ground", good: false },
 ] as const;
 
-const PASS_FIELDS = [
+export const PASS_FIELDS = [
   { key: "pass_attempts", label: "Pass attempts", hint: "Every throw", good: true },
   { key: "pass_completions", label: "Completions", hint: "Throws that were caught", good: true },
   { key: "pass_tds", label: "TD passes", hint: "Touchdowns you threw", good: true },
   { key: "ints_thrown", label: "Interceptions thrown", hint: "Your passes the defense picked", good: false },
 ] as const;
 
-type Key = (typeof FIELDS)[number]["key"] | (typeof PASS_FIELDS)[number]["key"];
-const empty: Record<Key, number> = {
+export type Key = (typeof FIELDS)[number]["key"] | (typeof PASS_FIELDS)[number]["key"];
+export const empty: Record<Key, number> = {
   touchdowns: 0,
   receptions: 0,
   interceptions: 0,
@@ -43,6 +43,15 @@ const empty: Record<Key, number> = {
 };
 const MAX: Partial<Record<Key, number>> = { pass_attempts: 200, pass_completions: 200, tackles: 100 };
 
+/** Sets one count, in range, keeping completions <= attempts whichever one changes. */
+export function withCount(c: Record<Key, number>, k: Key, raw: number): Record<Key, number> {
+  const v = Math.max(0, Math.min(MAX[k] ?? 99, Math.round(raw) || 0));
+  const next = { ...c, [k]: v };
+  if (k === "pass_attempts" && next.pass_completions > v) next.pass_completions = v;
+  if (k === "pass_completions" && v > next.pass_attempts) next.pass_attempts = v;
+  return next;
+}
+
 function localToday() {
   const d = new Date();
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
@@ -56,11 +65,14 @@ export function StatLogger({
   lines,
   lineLabels,
   ovrModel,
+  ovrOverride = null,
 }: {
   leagueId: string;
   memberId: string;
   isQb: boolean;
   ovrModel: OvrModel;
+  /** Set by the commissioner: shown instead of the calculated OVR. */
+  ovrOverride?: number | null;
   gameOptions: { id: string; label: string; date: string }[];
   lines: StatLine[];
   lineLabels: Record<string, string>;
@@ -75,15 +87,7 @@ export function StatLogger({
   const currentOvr = computeOvr(lines, ovrModel);
   const previewOvr = computeOvr([...lines, counts], ovrModel);
 
-  /** Keeps completions <= attempts whichever one changes. */
-  const setCount = (k: Key, raw: number) =>
-    setCounts((c) => {
-      const v = Math.max(0, Math.min(MAX[k] ?? 99, Math.round(raw) || 0));
-      const next = { ...c, [k]: v };
-      if (k === "pass_attempts" && next.pass_completions > v) next.pass_completions = v;
-      if (k === "pass_completions" && v > next.pass_attempts) next.pass_attempts = v;
-      return next;
-    });
+  const setCount = (k: Key, raw: number) => setCounts((c) => withCount(c, k, raw));
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -178,22 +182,32 @@ export function StatLogger({
           </div>
         </section>
 
-        <div className="card p-4 flex items-center gap-4">
-          <div className="flex-1">
-            <div className="text-xs uppercase tracking-widest text-muted font-semibold">OVR after this game</div>
-            <div className="text-sm text-muted mt-1">
-              {currentOvr == null ? "Your first rating" : `Currently ${currentOvr}`}
-              {currentOvr != null && previewOvr != null && previewOvr !== currentOvr && (
-                <span className={previewOvr > currentOvr ? "text-success" : "text-danger"}>
-                  {" "}
-                  ({previewOvr > currentOvr ? "+" : ""}
-                  {previewOvr - currentOvr})
-                </span>
-              )}
+        {ovrOverride != null ? (
+          <div className="card p-4 flex items-center gap-4">
+            <div className="flex-1">
+              <div className="text-xs uppercase tracking-widest text-muted font-semibold">OVR</div>
+              <div className="text-sm text-muted mt-1">Set by the commissioner. New games won&apos;t change it unless they switch it back to stats.</div>
             </div>
+            <OvrBadge ovr={ovrOverride} size="lg" />
           </div>
-          <OvrBadge ovr={previewOvr} size="lg" />
-        </div>
+        ) : (
+          <div className="card p-4 flex items-center gap-4">
+            <div className="flex-1">
+              <div className="text-xs uppercase tracking-widest text-muted font-semibold">OVR after this game</div>
+              <div className="text-sm text-muted mt-1">
+                {currentOvr == null ? "Your first rating" : `Currently ${currentOvr}`}
+                {currentOvr != null && previewOvr != null && previewOvr !== currentOvr && (
+                  <span className={previewOvr > currentOvr ? "text-success" : "text-danger"}>
+                    {" "}
+                    ({previewOvr > currentOvr ? "+" : ""}
+                    {previewOvr - currentOvr})
+                  </span>
+                )}
+              </div>
+            </div>
+            <OvrBadge ovr={previewOvr} size="lg" />
+          </div>
+        )}
 
         <FormError error={error} />
         <button className="btn btn-primary w-full" disabled={pending}>
@@ -215,7 +229,7 @@ export function StatLogger({
   );
 }
 
-function Counter({
+export function Counter({
   label,
   hint,
   good,

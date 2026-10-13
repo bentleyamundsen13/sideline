@@ -42,6 +42,8 @@ export type Member = {
   hometown: string | null;
   bio: string | null;
   joined_at: string;
+  /** OVR set by the commissioner, replacing the calculated one. Missing before migration 014. */
+  ovr_override?: number | null;
 };
 
 export type Game = {

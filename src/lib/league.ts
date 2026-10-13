@@ -50,7 +50,9 @@ export const getLeagueContext = cache(async (leagueId: string) => {
     if (!linesByMember.has(l.member_id)) linesByMember.set(l.member_id, []);
     linesByMember.get(l.member_id)!.push(l);
   }
-  const ovrByMember = new Map(members.map((m) => [m.id, computeOvr(linesByMember.get(m.id), ovrModel)]));
+  // What the stats say, and what everyone sees (the commissioner's number if they set one).
+  const calculatedOvrByMember = new Map(members.map((m) => [m.id, computeOvr(linesByMember.get(m.id), ovrModel)]));
+  const ovrByMember = new Map(members.map((m) => [m.id, m.ovr_override ?? calculatedOvrByMember.get(m.id) ?? null]));
   const records = computeRecords(teams, games);
   const ranked = standings(teams, records);
   const captainTeam = teams.find((t) => t.captain_id === me.id) ?? null;
@@ -78,6 +80,7 @@ export const getLeagueContext = cache(async (leagueId: string) => {
     statsByMember,
     ovrModel,
     ovrByMember,
+    calculatedOvrByMember,
     records,
     ranked,
     captainTeam,
