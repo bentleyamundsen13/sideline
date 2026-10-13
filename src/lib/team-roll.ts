@@ -164,17 +164,15 @@ export function rollTeams(players: RollPlayer[], count: number, existingNames: s
       name,
       abbr: abbrFromName(name),
       color: colors[i % colors.length],
-      captainId: pickCaptain(sorted, byId),
+      captainId: pickCaptain(sorted),
       playerIds: sorted,
     };
   });
 }
 
-/** The team's QB (best one if several), otherwise its best player. */
-export function pickCaptain(ids: string[], byId: Map<string, RollPlayer>): string | null {
-  const qbs = ids.filter((id) => byId.get(id)?.offense_position === "QB");
-  const pool = qbs.length ? qbs : ids;
-  return [...pool].sort((a, b) => (byId.get(b)?.ovr ?? 0) - (byId.get(a)?.ovr ?? 0))[0] ?? null;
+/** A random player from the team. */
+export function pickCaptain(ids: string[]): string | null {
+  return ids.length ? ids[Math.floor(Math.random() * ids.length)] : null;
 }
 
 /** Averages shown on each team card. */

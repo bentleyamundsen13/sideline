@@ -182,7 +182,7 @@ function RollReview({
       teams.map((t) => {
         if (t.key === from) {
           const ids = t.playerIds.filter((id) => id !== playerId);
-          return { ...t, playerIds: ids, captainId: t.captainId === playerId ? pickCaptain(ids, byId) : t.captainId };
+          return { ...t, playerIds: ids, captainId: t.captainId === playerId ? pickCaptain(ids) : t.captainId };
         }
         if (t.key === to) {
           const ids = [...t.playerIds, playerId];
