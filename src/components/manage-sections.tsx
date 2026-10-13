@@ -10,6 +10,9 @@ import { SPORTS, TEAM_COLORS } from "@/lib/constants";
 import type { Game, League, Team } from "@/lib/types";
 import { Avatar, TeamBadge } from "./ui";
 import { FormError } from "./form-error";
+import { ColorPicker } from "./color-picker";
+import { TeamRoller } from "./team-roller";
+import type { RollPlayer } from "@/lib/team-roll";
 
 type Player = {
   id: string;
@@ -30,33 +33,23 @@ function Section({ id, title, subtitle, children }: { id: string; title: string;
   );
 }
 
-function ColorPicker({ value, onChange }: { value: string; onChange: (c: string) => void }) {
-  return (
-    <div className="flex flex-wrap gap-2 items-center">
-      {TEAM_COLORS.map((c) => (
-        <button
-          key={c}
-          type="button"
-          onClick={() => onChange(c)}
-          className="w-8 h-8 rounded-full inline-flex items-center justify-center transition-transform hover:scale-110"
-          style={{ background: c, boxShadow: value === c ? `0 0 0 2px var(--bg), 0 0 0 4px ${c}` : undefined }}
-          aria-label={`Color ${c}`}
-          aria-pressed={value === c}
-        >
-          {value === c && <Check size={14} color="#fff" strokeWidth={3} />}
-        </button>
-      ))}
-      <label className="w-8 h-8 rounded-full border border-dashed border-line inline-flex items-center justify-center cursor-pointer relative overflow-hidden" title="Custom color">
-        <Plus size={14} className="text-muted" />
-        <input type="color" value={value} onChange={(e) => onChange(e.target.value)} className="absolute inset-0 opacity-0 cursor-pointer" />
-      </label>
-    </div>
-  );
-}
-
 /* ------------------------------------------------------------------ Teams */
 
-export function TeamsManager({ leagueId, teams, players }: { leagueId: string; teams: Team[]; players: Player[] }) {
+export function TeamsManager({
+  leagueId,
+  teams,
+  players,
+  rollPlayers,
+  teamsWithGames,
+}: {
+  leagueId: string;
+  teams: Team[];
+  players: Player[];
+  /** Onboarded players with what the roller needs (OVR, positions, size). */
+  rollPlayers: RollPlayer[];
+  /** Names of current teams that have games, so they're kept (empty) when new teams are rolled. */
+  teamsWithGames: string[];
+}) {
   const { run, pending, error } = useAction();
   const [name, setName] = useState("");
   const [abbr, setAbbr] = useState("");
@@ -85,6 +78,7 @@ export function TeamsManager({ leagueId, teams, players }: { leagueId: string; t
 
   return (
     <Section id="teams" title="Teams" subtitle="Create teams, then name a captain for each. Captains draft the rest.">
+      <TeamRoller leagueId={leagueId} players={rollPlayers} currentTeams={teams.map((t) => t.name)} teamsWithGames={teamsWithGames} />
       {teams.map((t) => (
         <TeamEditor key={t.id} team={t} players={players} />
       ))}

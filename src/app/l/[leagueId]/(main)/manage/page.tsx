@@ -13,7 +13,7 @@ export const metadata = { title: "Manage league" };
 
 export default async function ManagePage({ params }: PageProps<"/l/[leagueId]/manage">) {
   const { leagueId } = await params;
-  const { league, me, teams, members, games } = await getLeagueContext(leagueId);
+  const { league, me, teams, members, games, ovrByMember } = await getLeagueContext(leagueId);
   const tz = leagueTz(league);
 
   if (!me.is_commissioner) {
@@ -28,6 +28,23 @@ export default async function ManagePage({ params }: PageProps<"/l/[leagueId]/ma
     onboarded: m.onboarded,
     is_commissioner: m.is_commissioner,
   }));
+
+  // For Roll New Teams: everyone who's finished their profile.
+  const rollPlayers = members
+    .filter((m) => m.onboarded)
+    .map((m) => ({
+      id: m.id,
+      name: m.display_name,
+      avatar_url: m.avatar_url,
+      ovr: ovrByMember.get(m.id) ?? null,
+      offense_position: m.offense_position,
+      defense_position: m.defense_position,
+      height_in: m.height_in,
+      weight_lb: m.weight_lb,
+    }));
+  const teamsWithGames = teams
+    .filter((t) => games.some((g) => g.home_team_id === t.id || g.away_team_id === t.id))
+    .map((t) => t.name);
 
   const nav = [
     ["teams", "Teams"],
@@ -50,7 +67,7 @@ export default async function ManagePage({ params }: PageProps<"/l/[leagueId]/ma
           ))}
         </nav>
       </div>
-      <TeamsManager leagueId={leagueId} teams={teams} players={players} />
+      <TeamsManager leagueId={leagueId} teams={teams} players={players} rollPlayers={rollPlayers} teamsWithGames={teamsWithGames} />
       <PlayersManager meId={me.id} teams={teams} players={players} />
       <ScheduleManager key={`${teams.length}-${tz}`} leagueId={leagueId} teams={teams} games={games} defaultLocation={league.location} tz={tz} />
       <NewsComposer leagueId={leagueId} authorId={me.id} />
