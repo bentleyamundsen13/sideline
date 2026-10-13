@@ -9,6 +9,7 @@ import { DEFENSE_POSITIONS, OFFENSE_POSITIONS } from "@/lib/constants";
 import type { Member } from "@/lib/types";
 import { Avatar } from "./ui";
 import { FormError } from "./form-error";
+import { PositionQuizButton, type BodySize } from "./position-quiz";
 import { errorMessage } from "@/lib/format";
 
 /** Center-crops and shrinks a photo to a 400px square so uploads stay small. */
@@ -30,10 +31,13 @@ export function ProfileForm({
   member,
   teamColor,
   mode,
+  leagueSizes,
 }: {
   member: Member;
   teamColor: string | null;
   mode: "onboarding" | "edit";
+  /** Everyone else's height and weight, for the position quiz's size comparison. */
+  leagueSizes: BodySize[];
 }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -78,9 +82,11 @@ export function ProfileForm({
     }
   }
 
+  const heightIn = f.feet ? Number(f.feet) * 12 + Number(f.inches || 0) : null;
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const height = f.feet ? Number(f.feet) * 12 + Number(f.inches || 0) : null;
+    const height = heightIn;
     const ok = await run(async () => {
       await must(
         createClient()
@@ -145,6 +151,12 @@ export function ProfileForm({
           <input id="nickname" className="input" maxLength={30} placeholder="Hands" value={f.nickname} onChange={set("nickname")} />
         </div>
       </fieldset>
+
+      <PositionQuizButton
+        me={{ height_in: heightIn, weight_lb: num(f.weight_lb) }}
+        others={leagueSizes}
+        onPick={(offense_position, defense_position) => setF((s) => ({ ...s, offense_position, defense_position }))}
+      />
 
       <fieldset className="card p-4 space-y-4">
         <legend className="section-title px-1">Positions</legend>

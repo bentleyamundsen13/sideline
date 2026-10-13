@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getLeagueContext } from "@/lib/league";
+import { getLeagueContext, otherSizes } from "@/lib/league";
 import { ProfileForm } from "@/components/profile-form";
 import { Wordmark } from "@/components/ui";
 
@@ -7,7 +7,7 @@ export const metadata = { title: "Create your profile" };
 
 export default async function OnboardingPage({ params }: PageProps<"/l/[leagueId]/onboarding">) {
   const { leagueId } = await params;
-  const { league, me, myTeam } = await getLeagueContext(leagueId);
+  const { league, me, myTeam, members } = await getLeagueContext(leagueId);
   if (me.onboarded) redirect(`/l/${leagueId}`);
 
   return (
@@ -20,7 +20,7 @@ export default async function OnboardingPage({ params }: PageProps<"/l/[leagueId
           Build your player profile. This is what captains see when they&apos;re deciding who to draft.
         </p>
       </div>
-      <ProfileForm member={me} teamColor={myTeam?.color ?? null} mode="onboarding" />
+      <ProfileForm member={me} teamColor={myTeam?.color ?? null} mode="onboarding" leagueSizes={otherSizes(members, me.id)} />
     </main>
   );
 }

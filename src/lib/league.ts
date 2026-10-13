@@ -11,6 +11,13 @@ import type { Game, League, Member, StatLine, StatTotals, Team } from "./types";
  * the layout and the page. Backyard leagues are small, so we just load it all,
  * in a single parallel batch.
  */
+/** Everyone else's height and weight (only people who entered one), for size comparisons. */
+export function otherSizes(members: Member[], meId: string) {
+  return members
+    .filter((m) => m.id !== meId && m.onboarded && (m.height_in || m.weight_lb))
+    .map((m) => ({ height_in: m.height_in, weight_lb: m.weight_lb }));
+}
+
 export const getLeagueContext = cache(async (leagueId: string) => {
   const supabase = await createClient();
   const user = await getAuthUser(supabase);
