@@ -80,6 +80,9 @@ const tierColor = {
   unrated: "var(--surface-2)",
 };
 
+/** Font scale by number of characters in the OVR. */
+const OVR_SCALE: Record<number, number> = { 1: 1, 2: 1, 3: 0.78, 4: 0.6, 5: 0.5 };
+
 export function OvrBadge({
   ovr,
   size = "md",
@@ -107,7 +110,8 @@ export function OvrBadge({
       }}
       title={ovr == null ? "Not rated yet. Log a game to get an OVR." : `Overall rating ${ovr}`}
     >
-      {ovr ?? "–"}
+      {/* Commissioner-set OVRs can be any size (e.g. 9999), so shrink long numbers to fit. */}
+      <span style={{ fontSize: `${OVR_SCALE[Math.min(String(ovr ?? "–").length, 5)] ?? 1}em`, lineHeight: 1 }}>{ovr ?? "–"}</span>
       {showLabel && <span className="text-[9px] tracking-widest opacity-70 mt-0.5">OVR</span>}
     </span>
   );

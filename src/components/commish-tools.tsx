@@ -24,7 +24,8 @@ export function OvrOverride({
   const { run, pending, error } = useAction();
   const [value, setValue] = useState(String(override ?? calculated ?? 70));
   const n = Number(value);
-  const valid = Number.isInteger(n) && n >= 40 && n <= 99;
+  // Any number, for fun. Stats-based OVR stays 40-99.
+  const valid = value.trim() !== "" && Number.isInteger(n) && n >= -999 && n <= 9999;
 
   const save = (ovr: number | null) =>
     run(() => must(createClient().rpc("set_ovr_override", { p_member: memberId, p_ovr: ovr })));
@@ -58,10 +59,10 @@ export function OvrOverride({
         <input
           type="number"
           inputMode="numeric"
-          min={40}
-          max={99}
+          min={-999}
+          max={9999}
           aria-label="OVR"
-          className="input w-20 text-center display text-xl tabular"
+          className="input w-24 text-center display text-xl tabular"
           value={value}
           onFocus={(e) => e.target.select()}
           onChange={(e) => setValue(e.target.value)}
@@ -75,7 +76,7 @@ export function OvrOverride({
           </button>
         )}
       </form>
-      {!valid && value !== "" && <p className="text-xs text-danger">OVR goes from 40 to 99.</p>}
+      {!valid && value !== "" && <p className="text-xs text-danger">Pick a whole number from -999 to 9999.</p>}
       <FormError error={error} />
     </section>
   );

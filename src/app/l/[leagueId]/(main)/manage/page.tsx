@@ -13,7 +13,7 @@ export const metadata = { title: "Manage league" };
 
 export default async function ManagePage({ params }: PageProps<"/l/[leagueId]/manage">) {
   const { leagueId } = await params;
-  const { league, me, teams, members, games, ovrByMember } = await getLeagueContext(leagueId);
+  const { league, me, teams, members, games, ovrByMember, calculatedOvrByMember } = await getLeagueContext(leagueId);
   const tz = leagueTz(league);
 
   if (!me.is_commissioner) {
@@ -36,7 +36,8 @@ export default async function ManagePage({ params }: PageProps<"/l/[leagueId]/ma
       id: m.id,
       name: m.display_name,
       avatar_url: m.avatar_url,
-      ovr: ovrByMember.get(m.id) ?? null,
+      // A joke OVR (outside 40-99) would wreck the balance, so use their stats one for those.
+      ovr: m.ovr_override != null && (m.ovr_override < 40 || m.ovr_override > 99) ? (calculatedOvrByMember.get(m.id) ?? null) : (ovrByMember.get(m.id) ?? null),
       offense_position: m.offense_position,
       defense_position: m.defense_position,
       height_in: m.height_in,

@@ -374,7 +374,7 @@ function RolledTeamCard({
                   {p.weight_lb ? ` · ${p.weight_lb} lb` : ""}
                 </div>
               </div>
-              <span className="display text-lg tabular w-7 text-right">{p.ovr ?? "—"}</span>
+              <span className="display text-lg tabular min-w-7 text-right">{p.ovr ?? "—"}</span>
               <button
                 type="button"
                 onClick={() => onChange({ captainId: id })}
