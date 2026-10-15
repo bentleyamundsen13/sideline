@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, ChevronDown, Crown, Plus, Trash2 } from "lucide-react";
+import { Check, ChevronDown, Crown, Pencil, Plus, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { must, useAction } from "@/lib/use-action";
 import { abbrFromName } from "@/lib/format";
@@ -462,7 +462,7 @@ export function ScheduleManager({
       {upcoming.length > 0 && (
         <div className="card divide-y divide-line">
           {upcoming.map((g) => (
-            <GameEditor key={g.id} tz={tz} game={g} home={teamById.get(g.home_team_id)} away={teamById.get(g.away_team_id)} />
+            <GameEditor key={g.id} tz={tz} teams={teams} game={g} home={teamById.get(g.home_team_id)} away={teamById.get(g.away_team_id)} />
           ))}
         </div>
       )}
@@ -471,7 +471,7 @@ export function ScheduleManager({
           <h3 className="section-title pt-2 px-1">Final</h3>
           <div className="card divide-y divide-line">
             {finals.map((g) => (
-              <GameEditor key={g.id} tz={tz} game={g} home={teamById.get(g.home_team_id)} away={teamById.get(g.away_team_id)} />
+              <GameEditor key={g.id} tz={tz} teams={teams} game={g} home={teamById.get(g.home_team_id)} away={teamById.get(g.away_team_id)} />
             ))}
           </div>
         </>
@@ -480,11 +480,14 @@ export function ScheduleManager({
   );
 }
 
-function GameEditor({ game, home, away, tz }: { game: Game; home?: Team; away?: Team; tz: string }) {
+function GameEditor({ game, home, away, tz, teams }: { game: Game; home?: Team; away?: Team; tz: string; teams: Team[] }) {
   const { run, pending, error } = useAction();
   const [homeScore, setHomeScore] = useState(game.home_score?.toString() ?? "");
   const [awayScore, setAwayScore] = useState(game.away_score?.toString() ?? "");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [editing, setEditing] = useState(false);
+
+  if (editing) return <GameDetailsForm game={game} teams={teams} tz={tz} onClose={() => setEditing(false)} />;
   const final = game.status === "final";
   const changed = homeScore !== (game.home_score?.toString() ?? "") || awayScore !== (game.away_score?.toString() ?? "");
 
@@ -508,18 +511,24 @@ function GameEditor({ game, home, away, tz }: { game: Game; home?: Team; away?: 
   return (
     <div className="p-3 space-y-2">
       <div className="flex items-center justify-between text-xs text-muted">
-        <span>
+        <span className="min-w-0">
           {game.week ? `Week ${game.week} · ` : ""}
           {formatGameDate(game.scheduled_at, tz)} · {formatGameTime(game.scheduled_at, tz)}
+          {game.location ? ` · ${game.location}` : ""}
         </span>
         {confirmDelete ? (
-          <button className="text-danger font-semibold" disabled={pending} onClick={() => run(() => must(createClient().from("games").delete().eq("id", game.id)))}>
+          <button className="text-danger font-semibold shrink-0" disabled={pending} onClick={() => run(() => must(createClient().from("games").delete().eq("id", game.id)))}>
             Confirm delete
           </button>
         ) : (
-          <button onClick={() => setConfirmDelete(true)} aria-label="Delete game" className="hover:text-text">
-            <Trash2 size={14} />
-          </button>
+          <span className="flex items-center gap-1 shrink-0">
+            <button onClick={() => setEditing(true)} aria-label="Edit game time and details" className="w-8 h-8 -my-2 inline-flex items-center justify-center rounded-lg hover:text-text hover:bg-surface-2">
+              <Pencil size={14} />
+            </button>
+            <button onClick={() => setConfirmDelete(true)} aria-label="Delete game" className="w-8 h-8 -my-2 -mr-1 inline-flex items-center justify-center rounded-lg hover:text-text hover:bg-surface-2">
+              <Trash2 size={14} />
+            </button>
+          </span>
         )}
       </div>
       {scoreInput(away, awayScore, setAwayScore)}
@@ -544,6 +553,96 @@ function GameEditor({ game, home, away, tz }: { game: Game; home?: Team; away?: 
       )}
       <FormError error={error} />
     </div>
+  );
+}
+
+/** Change a scheduled game's matchup, date, time, week or location in place. */
+function GameDetailsForm({ game, teams, tz, onClose }: { game: Game; teams: Team[]; tz: string; onClose: () => void }) {
+  const { run, pending, error } = useAction();
+  const start = isoToZoned(game.scheduled_at, tz);
+  const [away, setAway] = useState(game.away_team_id);
+  const [home, setHome] = useState(game.home_team_id);
+  const [date, setDate] = useState(start.date);
+  const [time, setTime] = useState(start.time);
+  const [week, setWeek] = useState(game.week?.toString() ?? "");
+  const [location, setLocation] = useState(game.location ?? "");
+  const teamById = new Map(teams.map((t) => [t.id, t]));
+  const id = game.id;
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    const ok = await run(async () => {
+      await must(
+        createClient()
+          .from("games")
+          .update({
+            away_team_id: away,
+            home_team_id: home,
+            scheduled_at: zonedToIso(date, time, tz),
+            week: week ? Number(week) : null,
+            location: location.trim() || null,
+          })
+          .eq("id", id),
+      );
+      return true;
+    });
+    if (ok) onClose();
+  }
+
+  return (
+    <form onSubmit={save} className="p-3 space-y-3 bg-surface-2/40">
+      <div className="text-xs font-semibold uppercase tracking-widest text-muted">Edit game</div>
+      {(
+        [
+          ["Away", away, setAway],
+          ["Home", home, setHome],
+        ] as const
+      ).map(([side, value, set]) => (
+        <div key={side} className="flex items-center gap-2.5">
+          <TeamBadge team={teamById.get(value) ?? null} size={32} />
+          <select aria-label={`${side} team`} className="input flex-1" value={value} onChange={(e) => set(e.target.value)}>
+            {teams.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+          <span className="w-11 text-[10px] font-semibold uppercase tracking-widest text-muted">{side}</span>
+        </div>
+      ))}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="min-w-0">
+          <label className="label" htmlFor={`date-${id}`}>Date</label>
+          <input id={`date-${id}`} type="date" className="input" required value={date} onChange={(e) => e.target.value && setDate(e.target.value)} />
+        </div>
+        <div className="min-w-0">
+          <label className="label" htmlFor={`time-${id}`}>Time</label>
+          <input id={`time-${id}`} type="time" className="input" required value={time} onChange={(e) => e.target.value && setTime(e.target.value)} />
+        </div>
+      </div>
+      <p className="text-xs text-muted -mt-1">
+        {tzName(tz)} time ({tzAbbreviation(tz)}).
+      </p>
+      <div className="grid grid-cols-[76px_1fr] gap-2">
+        <div className="min-w-0">
+          <label className="label" htmlFor={`week-${id}`}>Week</label>
+          <input id={`week-${id}`} type="number" inputMode="numeric" min={1} max={99} className="input text-center" value={week} onChange={(e) => setWeek(e.target.value)} />
+        </div>
+        <div className="min-w-0">
+          <label className="label" htmlFor={`loc-${id}`}>Location</label>
+          <input id={`loc-${id}`} className="input" maxLength={60} placeholder="Optional" value={location} onChange={(e) => setLocation(e.target.value)} />
+        </div>
+      </div>
+      <FormError error={error ?? (home === away ? "Pick two different teams." : null)} />
+      <div className="flex gap-2">
+        <button type="button" className="btn btn-secondary" onClick={onClose} disabled={pending}>
+          Cancel
+        </button>
+        <button className="btn btn-primary flex-1" disabled={pending || home === away}>
+          {pending ? "Saving…" : "Save changes"}
+        </button>
+      </div>
+    </form>
   );
 }
 
